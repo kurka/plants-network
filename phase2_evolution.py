@@ -12,7 +12,7 @@ _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 20       #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
 _PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
-_LOG_FILE = "evolution100.txt"
+_LOG_FILE = "logs/evolution100.txt"
 
 #network constrains
 _N_NODES = 100                    #number of nodes in the network

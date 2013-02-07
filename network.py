@@ -27,6 +27,7 @@ class Node:
         self.value = 0.0
         self.status = 0                 #statuses: 0- stay; 1-asking for energy; 2-offering energy (see run function)
         self.transactional_energy = 0.0 #ammount of energy to be transfered by the node
+        self.candidates = 0.0           #amount of neighbours avaiable to exchange energy
         self.endanger = 0               #number of generations that the node is under or above the safe limits of energy
         self.is_alive = True            #if the node is alive or not
 
@@ -67,42 +68,45 @@ class Network:
 
         #First Round: each node decides to: 1-ask energy from neighbours 2-offer energy to neighbours 0-stay as it is
         for node in self.nodes: #first evaluate which nodes need energy, or will keep their levels
+            #TODO: swap order
             if node.value < lower_limit: #if energy is too low
                 node.status = 1 #set status to "asking for energy"
-                node.transactional_energy = lower_limit - node.value #the ammount of energy needed
+                node.transactional_energy = lower_limit - node.value #the ammount of energy to be received
+                node.candidates = sum(1.0 for i in node.connections if self.nodes[i].value > upper_limit) #amount of neighbours offering energy
             elif node.value > upper_limit: #if energy is too high
                 node.status = 2 #set status to "offering energy"
+                node.transactional_energy = node_value - upper_limit #the ammount of energy to be given away
+                node.candidates = sum(1.0 for i in node.connections if self.nodes[i].value < lower_limit) #amount of neighbours asking for energy
             else: #if energy is nor low or high
                 node.status = 0 #sets status to stay as it is (ie: do nothing)
-                node.transactional_energy = 0
-        for node in self.nodes: #secondly, evaluate the amount of energy to be transfered
-            if node.status == 2:
-                number_of_requests = sum(1.0 for i in node.connections if self.nodes[i].status == 1) #counts how many neighbours are asking for energy
-                if number_of_requests > 0:
-                    node.transactional_energy = (node.value - upper_limit) / number_of_requests #divide the extra energy equaly among those who are asking
-                    #TODO: divide proportionally the ammount of energy
-                else:
-                    node.transactional_energy = node.value - upper_limit
+                node.transactional_energy = 0.0
+                node.candidates = 0.0
 
         #Second Round: performs the energy transactions
         #a transaction occurs always when a node with status 1 (asking) is connected to one (or more) nodes with status 2 (offering)
         for node in self.nodes:
             if node.status == 1: #found a node in need of energy
                 energy_avaiable = 0.0
+                for connection in node.connections: #first, check how much energy is avaiable in total
+                    neighbour = self.nodes[connection]
+                    if neighbour.status == 2:
+                        energy_avaiable += neighbour.transactional_energy / neighbour.candidates #to be fair, the node will just receive a fraction of the neighbour's spare energy
                 for connection in node.connections:
                     neighbour = self.nodes[connection]
                     if neighbour.status == 2:
-                        energy_avaiable += neighbour.transactional_energy #sum the ammount of total energy
-                for connection in node.connections:
-                    neighbour = self.nodes[connection]
-                    if neighbour.status == 2:
-                        if energy_avaiable <= node.transactional_energy: #if the total energy avaiable is less than what the node needs, the node accepts all the energy being offered
+                        #if the total energy avaiable is less than what the node needs, the node accepts all the energy being offered
+                        if energy_avaiable <= node.transactional_energy:
                             energy_transmited = neighbour.transactional_energy
-                        else: #when there is more energy avaiable than needed, the node gets energy from its neighbours proportional to the offered amount
-                            energy_transmited = neighbour.transactional_energy * (neighbour.transactional_energy / energy_avaiable)
+                        #when there is more energy avaiable than needed, the node gets energy from its neighbours proportional to the offered amount
+                        else:
+                            energy_offered = neighbour.transactional_energy / neighbour.candidates
+                            energy_transmited = energy_offered * (energy_offered / energy_avaiable)
                         node.value += energy_transmited #needy node gets energy
-                        neighbour.value -= energy_transmited #rich node looses energy
                         node.transactional_energy -= energy_transmited
+                        node.candidates -= 1.0
+                        neighbour.value -= energy_transmited #rich node looses energy
+                        neighbour.transactional_energy -= energy_transmited
+                        neighbour.candidates -= 1.0
 
 
         #self.print_network()
