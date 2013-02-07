@@ -75,7 +75,7 @@ class Network:
                 node.candidates = sum(1.0 for i in node.connections if self.nodes[i].value > upper_limit) #amount of neighbours offering energy
             elif node.value > upper_limit: #if energy is too high
                 node.status = 2 #set status to "offering energy"
-                node.transactional_energy = node_value - upper_limit #the ammount of energy to be given away
+                node.transactional_energy = node.value - upper_limit #the ammount of energy to be given away
                 node.candidates = sum(1.0 for i in node.connections if self.nodes[i].value < lower_limit) #amount of neighbours asking for energy
             else: #if energy is nor low or high
                 node.status = 0 #sets status to stay as it is (ie: do nothing)
