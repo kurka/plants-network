@@ -12,7 +12,7 @@ _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 20       #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
 _PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
-_LOG_FILE = "logs/evolution100.txt"
+_LOG_FILE = "logs/evolution100thread.txt"
 
 #network constrains
 _N_NODES = 100                    #number of nodes in the network
@@ -34,7 +34,7 @@ class Evolution:
         self.individuals = []
         self.n_nodes = n_nodes
         self.pop_size = population_size
-        self.fitness_sum = 0.0 #variable used in print_results method
+        self.noise = []
 
         #initialize the log file
         self.log_file = open(_LOG_FILE, 'a')
@@ -59,47 +59,47 @@ class Evolution:
     def run(self):
 
         #generate random noise to be inputed in all networks tested in this generation
-        noise = []
         for i in range(_TESTS_PER_INDIVIDUAL):
-            noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
+            self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
 
-        self.fitness_sum = 0.0
         for i in range(self.pop_size):
-            #generate connections_matrix, from the genome
-            connections_matrix = [0] * self.matrix_size #initialize with zeroes 
-            for connection in self.individuals[i][0]:
-                connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
-
-            partial_fitness = 0
-
-            for j in range(_TESTS_PER_INDIVIDUAL):
-                #generate network from genome 
-                network = Network(self.n_nodes)
-                network.initialize_from_matrix(connections_matrix)
-
-                #initialize network with values
-                NoiseControl.apply_random_noise(network, noise[j])
-
-
-                #run for certain time
-                for k in range(_ITERATIONS):
-                    #[input energy]
-                    #NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT)
-                    #run network
-                    network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
-                    #update network
-                    network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
-                    #[lose energy]
-
-                #evaluate fitness of the individual
-                partial_fitness += network.count_survivors()
-            #network.print_network(True)
-            fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
-            self.fitness_sum += fitness #save value, to be used in print_results method
-            self.individuals[i][1] = fitness
+            self.run_individual(i) #TODO: thread this
 
         #order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
+
+    def run_individual(self, num):
+        #generate connections_matrix, from the genome
+        connections_matrix = [0] * self.matrix_size #initialize with zeroes 
+        for connection in self.individuals[num][0]:
+            connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
+
+        partial_fitness = 0
+
+        for j in range(_TESTS_PER_INDIVIDUAL):
+            #generate network from genome 
+            network = Network(self.n_nodes)
+            network.initialize_from_matrix(connections_matrix)
+
+            #initialize network with values
+            NoiseControl.apply_random_noise(network, self.noise[j])
+
+            #run for certain time
+            for k in range(_ITERATIONS):
+                #[input energy]
+                #NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT)
+                #run network
+                network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
+                #update network
+                network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
+                #[lose energy]
+
+            #evaluate fitness of the individual
+            partial_fitness += network.count_survivors()
+        #network.print_network(True)
+        fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
+        self.individuals[num][1] = fitness
+
 
     def evolute(self):
         new_generation = []
@@ -148,7 +148,8 @@ class Evolution:
         best = self.individuals[self.pop_size-1][1] #self.individuals list was sorted in beggining of evolution method
         median = self.individuals[round(self.pop_size/2)][1]
         worst = self.individuals[0][1]
-        avg = self.fitness_sum/float(self.pop_size)
+        fitness_sum = sum([fit[1] for fit in  self.individuals])
+        avg = fitness_sum/float(self.pop_size)
 
         best_phenotype = self.individuals[self.pop_size-1][0].copy()
         best_phenotype.sort()
