@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys, os
 import random
 import datetime
+import threading
+import pickle
 from network import *
 
 #evolution constrains
@@ -12,7 +15,7 @@ _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 20       #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
 _PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
-_LOG_FILE = "logs/evolution100thread.txt"
+_LOG_FILE = "logs/evolution100.txt"
 
 #network constrains
 _N_NODES = 100                    #number of nodes in the network
@@ -30,7 +33,7 @@ _MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the syste
 random.seed()
 
 class Evolution:
-    def __init__(self, population_size, n_nodes, total_connections):
+    def __init__(self, population_size, n_nodes, total_connections, start_from_file=False, bkp_file_path=""):
         self.individuals = []
         self.n_nodes = n_nodes
         self.pop_size = population_size
@@ -51,10 +54,16 @@ class Evolution:
         # we will just store the triangular part of the matrix, above the main diagonal, in an array.
         self.matrix_size = int(((n_nodes - 1)*n_nodes)/2) #this is the size of the triangular region lower to the main diagonal of the matrix.
 
-        #generate individuals as samples of |genome_size| from the possible connections_matrix slots.
-        for i in range(population_size):
-            connections = random.sample(range(self.matrix_size), self.genome_size) #get a genome_size sample in a matrix_size range
-            self.individuals.append([connections,0.0]) #add individual and fitness to individual array
+        if not start_from_file: #create individuals randomly
+            #generate individuals as samples of |genome_size| from the possible connections_matrix slots.
+            for i in range(population_size):
+                connections = random.sample(range(self.matrix_size), self.genome_size) #get a genome_size sample in a matrix_size range
+                self.individuals.append([connections,0.0]) #add individual and fitness to individual array
+
+        if start_from_file: #created individuals from a previous execution (used to continue broken executions)
+            bkp_file = open(bkp_file_path, "rb")
+            self.individuals = pickle.load(bkp_file)
+
 
     def run(self):
 
@@ -119,6 +128,11 @@ class Evolution:
 
         self.individuals = new_generation #Exchange old individuals with the new generation
 
+        #copy genome population to a file, to be able to start from this population, in case of broken execution
+        bkp = open("genome_backup.dat", "wb")
+        pickle.dump(self.individuals, bkp)
+        bkp.close()
+
 
     def select(self, sample_size):
         sample = random.sample(self.individuals, sample_size) #get a sample, to select the parent
@@ -171,10 +185,19 @@ class Evolution:
         self.log_file.close()
 
 
-def main():
+
+def main(argv):
+
     #evolution of the network
+    if len(argv) > 1:
+        bkp_file = argv[1]
+        use_file = True
+    else:
+        bkp_file = ""
+        use_file = False
+
     #generate initial population P
-    evolution = Evolution(_POPULATION_SIZE, _N_NODES, _TOTAL_CONNECTIONS)
+    evolution = Evolution(_POPULATION_SIZE, _N_NODES, _TOTAL_CONNECTIONS, use_file, bkp_file)
     for i in range(_GENERATIONS):
         print(">>>>>>GENERATION", i)
         #run program
@@ -187,5 +210,5 @@ def main():
             print(evolution.individuals[i][0])
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
 
