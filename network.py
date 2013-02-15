@@ -191,13 +191,26 @@ class NoiseControl:
             random_noise.append(random.randrange(noise_range))
         return random_noise
 
-    def apply_random_noise(network, predefined_noise=[], noise_range=_NODE_VALUES_RANGE):
+    def apply_random_noise(network, predefined_noise=[], noise_range=_NODE_VALUES_RANGE, negative_range=True):
         if predefined_noise: #if it is just applying a noise created befoere in random_noise_generator
             for i in range(len(network.nodes)):
                 network.nodes[i].value += predefined_noise[i]
         else: #create a new noise patern now
-            for node in network.nodes:
-                node.value += random.randrange(noise_range)
+            if negative_range:
+                for node in network.nodes:
+                    node.value += random.randrange(noise_range*(-1), noise_range) #generate either a positive or a negative value
+            elif not negative_range:
+                for node in network.nodes:
+                    node.value += random.randrange(noise_range*(-1), noise_range) #generate only positive values
+
+
+    def apply_circular_noise(network, noise_range=_NODE_VALUES_RANGE):
+        import math
+        net_size = len(network.nodes)
+        for i in range(net_size):
+            networl.nodes[i].value += math.cos(i/net_size * 2*math.pi) * noise_range #apply circular noise to the network
+
+
 
 
 
@@ -215,7 +228,6 @@ def main():
         network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
         #update network
         network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
-        #lose energy #TODO
         network.print_network()
     network.print_network(True)
     #analyse result network
