@@ -42,8 +42,6 @@ class Evolution:
         #initialize the log file
         self.log_file = open(_LOG_FILE, 'a')
         t0 = datetime.datetime.now()
-        self.log_file.write("--------------------------- " + str(t0) + " -----------------------------" + "\n")
-        self.log_file.close()
 
         #each individual is represented by an array, of size |total_connections|, with the 'address' of its connections in the connections_matrix
         self.genome_size = total_connections
@@ -59,10 +57,14 @@ class Evolution:
             for i in range(population_size):
                 connections = random.sample(range(self.matrix_size), self.genome_size) #get a genome_size sample in a matrix_size range
                 self.individuals.append([connections,0.0]) #add individual and fitness to individual array
+            self.log_file.write("--------------------------- " + str(t0) + " -----------------------------" + "\n")
 
         if start_from_file: #created individuals from a previous execution (used to continue broken executions)
             bkp_file = open(bkp_file_path, "rb")
             self.individuals = pickle.load(bkp_file)
+            self.log_file.write(">>>>>>>>>>>>>>>>> Continuing from previous execution. " + str(t0) + "\n")
+ 
+        self.log_file.close()
 
 
     def run(self):
