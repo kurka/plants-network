@@ -9,7 +9,7 @@ import pickle
 from network import *
 
 #evolution constrains
-_POPULATION_SIZE = 500            #size of genome's population
+_POPULATION_SIZE = 1000           #size of genome's population
 _TESTS_PER_INDIVIDUAL = 1000      #amount of tests by individual
 _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 20       #size of the random sample group where the best ranked will be father or mother
@@ -19,15 +19,14 @@ _LOG_FILE = "logs/evolution100.txt"
 
 #network constrains
 _N_NODES = 100                    #number of nodes in the network
-_TOTAL_CONNECTIONS = 2*_N_NODES   #fixed amount of connections, distributed in the graph
+_TOTAL_CONNECTIONS = int(1.5*_N_NODES)  #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 20                  #how many iterations each individual will try to survive
-_LOWER_ENERGY_LIMIT_RULE = 40     #lower limit of energy used in rule (the node will *try* to stay above it)
-_UPPER_ENERGY_LIMIT_RULE = 60     #upper limit of energy used in rule (the node will *try* to stay under it)
-_LOWER_ENERGY_LIMIT_DANGER = 30   #absolute lower limit. If the node stay bellow this level for G generations, it dies
-_UPPER_ENERGY_LIMIT_DANGER = 70   #absolute upper limit. If the node stay above this level for G generations, it dies
+_ITERATIONS = 100                 #how many iterations each individual will try to survive
+_LOWER_ENERGY_LIMIT_RULE = 45     #lower limit of energy used in rule (the node will *try* to stay above it)
+_UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node will *try* to stay under it)
+_LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
+_UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
-_MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system 
 
 
 random.seed()
@@ -63,11 +62,11 @@ class Evolution:
             bkp_file = open(bkp_file_path, "rb")
             self.individuals = pickle.load(bkp_file)
             self.log_file.write(">>>>>>>>>>>>>>>>> Continuing from previous execution. " + str(t0) + "\n")
- 
+
         self.log_file.close()
 
 
-    def run(self):
+    def step(self):
 
         #generate random noise to be inputed in all networks tested in this generation
         for i in range(_TESTS_PER_INDIVIDUAL):
@@ -78,6 +77,11 @@ class Evolution:
 
         #order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
+
+		#copy genome population to a file, to be able to start from this population, in case of broken execution
+        bkp = open("genome.dat", "wb")
+        pickle.dump(self.individuals, bkp)
+        bkp.close()
 
     def run_individual(self, num):
         #generate connections_matrix, from the genome
@@ -95,15 +99,21 @@ class Evolution:
             #initialize network with values
             NoiseControl.apply_random_noise(network, self.noise[j])
 
+            old_values_list = network.get_values()
             #run for certain time
             for k in range(_ITERATIONS):
                 #[input energy]
-                #NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT)
                 #run network
                 network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
                 #update network
                 network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
                 #[lose energy]
+                new_values_list = network.get_values()
+                if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
+                    break
+                old_values_list = new_values_list #update list os values for next iteration
+                if k==_ITERATIONS-1:
+                    print("went until the end!")
 
             #evaluate fitness of the individual
             partial_fitness += network.count_survivors()
@@ -112,7 +122,8 @@ class Evolution:
         self.individuals[num][1] = fitness
 
 
-    def evolute(self):
+
+    def evolute(self, gen):
         new_generation = []
 
         #keep some of them in new generation (elitist selection)
@@ -131,7 +142,7 @@ class Evolution:
         self.individuals = new_generation #Exchange old individuals with the new generation
 
         #copy genome population to a file, to be able to start from this population, in case of broken execution
-        bkp = open("genome_backup.dat", "wb")
+        bkp = open("genome_"+str(gen)+".dat", "wb")
         pickle.dump(self.individuals, bkp)
         bkp.close()
 
@@ -203,10 +214,10 @@ def main(argv):
     for i in range(_GENERATIONS):
         print(">>>>>>GENERATION", i)
         #run program
-        evolution.run()
+        evolution.step()
         evolution.print_results(i)
         #evolve
-        evolution.evolute()
+        evolution.evolute(i)
     print(">>>>>>FINAL RESULT:")
     for i in range(len(evolution.individuals)):
             print(evolution.individuals[i][0])

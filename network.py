@@ -42,6 +42,7 @@ class Network:
     #initialize a network with n_nodes
         self.n_nodes = n_nodes
         self.nodes = []
+        self.values_list = [0]* n_nodes #store in a list the nodes values
 
         for i in range(self.n_nodes):
             new_node = Node() #create the node
@@ -96,11 +97,11 @@ class Network:
                     if neighbour.status == 2:
                         #if the total energy avaiable is less than what the node needs, the node accepts all the energy being offered
                         if energy_avaiable <= node.transactional_energy:
-                            energy_transmited = neighbour.transactional_energy
+                            energy_transmited = neighbour.transactional_energy / neighbour.candidates
                         #when there is more energy avaiable than needed, the node gets energy from its neighbours proportional to the offered amount
                         else:
                             energy_offered = neighbour.transactional_energy / neighbour.candidates
-                            energy_transmited = energy_offered * (energy_offered / energy_avaiable)
+                            energy_transmited = node.transactional_energy * (energy_offered / energy_avaiable)
                         node.value += energy_transmited #needy node gets energy
                         node.transactional_energy -= energy_transmited
                         node.candidates -= 1.0
@@ -114,6 +115,7 @@ class Network:
     def update_network(self, lower_limit, upper_limit, endanger_limit):
         #check which nodes are under or above the safe energy levels
         for node in self.nodes:
+            self.values_list[self.nodes.index(node)] = node.value #update the values_list
             if node.value < lower_limit or node.value > upper_limit:
                 node.endanger += 1 #for each generation it is out of the safe limits, increase endenger
             else:
@@ -145,6 +147,10 @@ class Network:
                 deaths += 1
         return survivors
 
+    def get_values(self):
+        return self.values_list.copy()
+
+
     def print_network(self, show_connections=False): #Prints the value of each node (0 to _NODE_VALUES_RANGE) of the network on a single line
         values_str = ''
         for i in range(self.n_nodes):
@@ -153,6 +159,8 @@ class Network:
                 print(connections_str)
             values_str += str(self.nodes[i].value.__round__()) + ' '
         print(values_str)
+
+
 
 
 class SmallWorld(Network):
@@ -201,21 +209,21 @@ class NoiseControl:
                     node.value += random.randrange(noise_range*(-1), noise_range) #generate either a positive or a negative value
             elif not negative_range:
                 for node in network.nodes:
-                    node.value += random.randrange(noise_range*(-1), noise_range) #generate only positive values
+                    node.value += random.randrange(0, noise_range) #generate only positive values
 
 
     def apply_circular_noise(network, noise_range=_NODE_VALUES_RANGE):
         import math
         net_size = len(network.nodes)
         for i in range(net_size):
-            networl.nodes[i].value += math.cos(i/net_size * 2*math.pi) * noise_range #apply circular noise to the network
+            networl.nodes[i].value += math.cos(i/float(net_size) * 2*math.pi) * noise_range #apply circular noise to the network
 
 
 
 
 
 def main():
-	#generate network
+    #generate network
     network = SmallWorld(_N_NODES, _N_CONNECTIONS, _P)
     #[initialize network with values]
     NoiseControl.apply_random_noise(network, _NODE_VALUES_RANGE)

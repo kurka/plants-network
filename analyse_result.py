@@ -50,6 +50,12 @@ def main(argv):
 
     #os.system("dot -Tsvg logs/100.dot -o logs/100.svg")
 
+    #TODO:
+    #grau medio
+    #distribuição de graus (histograma)
+    #distancia média
+    #grau de clusterizacao
+    #distribuição conjunta de graus (no graus de grau "n1", conecta com graus "n2") (assortividade)
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -9,32 +9,23 @@ import pickle
 from network import *
 
 #evolution constrains
-_POPULATION_SIZE = 500            #size of genome's population
-_TESTS_PER_INDIVIDUAL = 1000      #amount of tests by individual
-_GENERATIONS = 50                 #amount of generations the program will evolve
-_SELECTION_SAMPLE_SIZE = 20       #size of the random sample group where the best ranked will be father or mother
-_MUTATION_RATE = 0.02             #chance of gene being mutated
-_PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
+_TESTS_PER_INDIVIDUAL = 10      #amount of tests by individual
 _LOG_FILE = "logs/rule.txt"
 
 #network constrains
-_N_NODES = 100                    #number of nodes in the network
-_TOTAL_CONNECTIONS = 2*_N_NODES   #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
 _ITERATIONS = 20                  #how many iterations each individual will try to survive
-_LOWER_ENERGY_LIMIT_RULE = 40     #lower limit of energy used in rule (the node will *try* to stay above it)
-_UPPER_ENERGY_LIMIT_RULE = 60     #upper limit of energy used in rule (the node will *try* to stay under it)
 _LOWER_ENERGY_LIMIT_DANGER = 30   #absolute lower limit. If the node stay bellow this level for G generations, it dies
 _UPPER_ENERGY_LIMIT_DANGER = 70   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
-_MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system 
 
 
 random.seed()
 
 def main(argv):
     if len(argv) != 3:
-        print("usage: analyse_result [n_nodes] [list]")
+        print("usage: rules_evolution [n_nodes] [list]")
+        print(len(argv))
         return
 
     ##create network
@@ -61,18 +52,22 @@ def main(argv):
     for i in range(values_range):
         for j in range(values_range):
             candidates.append([i,j,0])
-
+    print(candidates)
     ##run execution
-    #generate random noise to be inputed in all networks tested 
+    #generate random noise to be inputed in all networks tested
+    noise = []
     for i in range(_TESTS_PER_INDIVIDUAL):
-        self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
+        noise.append(NoiseControl.random_noise_generator(n_nodes, _NODE_VALUES_RANGE))
 
-    for i in range(values_range*values_range)
+    for i in range(values_range*values_range):
         partial_fitness = 0
+        print(i)
 
         for j in range(_TESTS_PER_INDIVIDUAL):
+            network = Network(n_nodes)
+            network.initialize_from_matrix(connections_matrix) #FIXME
             #initialize network with values
-            NoiseControl.apply_random_noise(network, self.noise[j])
+            NoiseControl.apply_random_noise(network, noise[j])
 
             #run for certain time
             for k in range(_ITERATIONS):
@@ -86,24 +81,25 @@ def main(argv):
             partial_fitness += network.count_survivors()
         #network.print_network(True)
         fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
+        print(fitness)
         candidates[i][2] = fitness #store the fitness in candidate
 
-        #isort candidates by fitness
-        candidates.sort(key = lambda x: x[2]) #Sort the sample by fitness
+    #sort candidates by fitness
+    candidates.sort(key = lambda x: x[2]) #Sort the sample by fitness
 
 
 
-        #copy candidates population to a file
-        result_file = open("rules_result.dat", "wb")
-        pickle.dump(candidates, bkp)
-        result_file.close()
+    #copy candidates population to a file
+    result_file = open("rules_result.dat", "wb")
+    pickle.dump(candidates, result_file)
+    result_file.close()
 
-        print("10 best rules:")
-        print("format: (lower, high, fitness)")
-        for i in range(10):
-            print(candidates[i][0], candidates[i][1], candidates[i][2]
+    print("100 best rules:")
+    print("format: (lower, high, fitness)")
+    for i in range(1, 1001):
+        print(candidates[-i][0], candidates[i][1], candidates[i][2])
 
-        #TODO: enhance print_results
+    #TODO: enhance print_results
 
 
 
