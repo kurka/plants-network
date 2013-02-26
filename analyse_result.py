@@ -2,53 +2,112 @@
 # -*- coding: utf-8 -*-
 
 import sys, os
+import pickle
 from network import *
-from graph_tool.all import *
+#from graph_tool.all import *
 
-def main(argv):
+def connections_frequency(genome_population):
+    #counts the frequency of possible connections, in the genome population
 
-    if len(argv) != 3:
-        print("usage: analyse_result [n_nodes] [list]")
-        return
+    #concatenate all genome_lists
+    conc_genome = []
+    for genome in genome_population:
+        conc_genome += genome[0]
 
-    n_nodes = int(argv[1]) #number of nodes in the network
-    matrix_size = int(((n_nodes - 1)*n_nodes)/2) #this is the size of the triangular region lower to the main diagonal of the matrix.
+    import collections
+    counter=collections.Counter(conc_genome)
 
-    genome = eval(argv[2])
+    print("frequency of connections in the genome population:")
+    print(counter.values())
+    print(counter.most_common(100))
+    print()
 
-    #generate connections_matrix, from the genome
-    connections_matrix = [0] * matrix_size #initialize with zeroes 
-    for connection in genome:
-        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
+
+def create_network_net(n_nodes, connections_matrix):
+    #create the network as a Network class and print its topology
 
     #generate network from genome 
     network = Network(n_nodes)
     network.initialize_from_matrix(connections_matrix)
-    network.print_network(True)
+    return network
 
+
+def create_graphtool_net(n_nodes, connections_matrix):
     #using graphtool library!
     g = Graph(directed=False)
     #add vertex
     vlist = g.add_vertex(n_nodes)
 
     #add edges
-    #genome is an array with the values of a triangular matrix below the main diagonal. (eg: genome[0] == matrix[1,0]; genome[1] == matrix[2,0]; genome[2] == matrix[2,1]; ... 
     position = 0 #current position in genome array
-    elist = []
     for i in range(n_nodes):
         for j in range(i):
             if connections_matrix[position] == 1:
                 g.add_edge(g.vertex(i), g.vertex(j))
-				#elist.append(g.add_edge(vlist[i], vlist[j]))
             position += 1
+
+    return g
+
+def draw_graphtool(graph):
     #pos = fruchterman_reingold_layout(g, circular=True)
-    pos = arf_layout(g)
+    pos = arf_layout(graph)
     #graph_draw(g, pos=pos, output="100.pdf")
-    graph_draw(g, output="logs/100.pdf")
-    g.save("logs/100.dot")
+    graph_draw(graph, output="analysis/graphtool.pdf")
     #draw.interactive_window(g)
 
-    #os.system("dot -Tsvg logs/100.dot -o logs/100.svg")
+def draw_dot(graph):
+    graph.save("analysis/graphviz.dot")
+    os.system("circo -Tsvg logs/100.dot -o analysis/graphviz.svg")
+
+
+def graphtool_analysis(graph):
+
+    #vertex_hist - Return the vertex histogram of the given degree type or property.
+
+    #edge_hist - Return the edge histogram of the given property.
+    #vertex_average - Return the average of the given degree or vertex property.
+    #edge_average - Return the average of the given degree or vertex property.
+    #label_parallel_edges - Label edges which are parallel, i.e, have the same source and target vertices.
+    #remove_parallel_edges - Remove all parallel edges from the graph.
+    #label_self_loops - Label edges which are self-loops, i.e, the source and target vertices are the same.
+    #remove_self_loops - Remove all self-loops edges from the graph.
+    #remove_labeled_edges - Remove every edge e such that label[e] != 0.
+    #distance_histogram - Return the shortest-distance histogram for each vertex pair in the graph.
+
+
+def main(argv):
+
+    if len(argv) != 3:
+        print("usage: analyse_result [n_nodes] [pickle_file]")
+        return
+
+    n_nodes = int(argv[1]) #number of nodes in the network
+    bkp_file = open(argv[2], "rb")
+    genome_population = pickle.load(bkp_file)
+    pop_size = len(genome_population)
+    genome = genome_population[pop_size-1][0] #get the last genome, to test. if the list is initialized, it will contain the best individual
+    matrix_size = int(((n_nodes - 1)*n_nodes)/2) #this is the size of the triangular region lower to the main diagonal of the matrix.
+
+    #generate connections_matrix, from the genome
+    connections_matrix = [0] * matrix_size #initialize with zeroes 
+    for connection in genome:
+        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
+
+    #analyse frequency of connections, among the population
+    connections_frequency(genome_population)
+
+    #create Network object
+    net = create_network_net(n_nodes, connections_matrix)
+    #net.print_network(True)
+
+    #Create graphtool object
+    #g = create_graphtool_net(n_nodes, connections_matrix)
+
+    #draw_graphtool(graph):
+    #draw_dot(graph):
+
+    #graph_tool analysis
+    #graphtool_analysis(g)
 
     #TODO:
     #grau medio

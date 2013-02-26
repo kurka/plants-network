@@ -14,7 +14,7 @@ from network import *
 _POPULATION_SIZE = 200            #size of genome's population
 _TESTS_PER_INDIVIDUAL = 500       #amount of tests by individual
 _GENERATIONS = 50                 #amount of generations the program will evolve
-_SELECTION_SAMPLE_SIZE = 2        #size of the random sample group where the best ranked will be father or mother
+_SELECTION_SAMPLE_SIZE = 10       #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
 _PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
 _LOG_FILE = "logs/evolutionmulti.txt"
@@ -23,7 +23,7 @@ _LOG_FILE = "logs/evolutionmulti.txt"
 _N_NODES = 1000                   #number of nodes in the network
 _TOTAL_CONNECTIONS = int(1.5*_N_NODES)  #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 100                 #how many iterations each individual will try to survive
+_ITERATIONS = 10                  #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_RULE = 45     #lower limit of energy used in rule (the node will *try* to stay above it)
 _UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node will *try* to stay under it)
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
@@ -42,17 +42,12 @@ def run_individual(args):
     individual = args[0]
     noise = args[1]
 
-    #generate connections_matrix, from the genome
-    connections_matrix = [0] * _MATRIX_SIZE #initialize with zeroes 
-    for connection in individual[0]:
-        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
-
     partial_fitness = 0
 
     for j in range(_TESTS_PER_INDIVIDUAL):
         #generate network from genome 
         network = Network(_N_NODES)
-        network.initialize_from_matrix(connections_matrix)
+        network.initialize_from_genome(individual[0])
 
         #initialize network with values
         NoiseControl.apply_random_noise(network, noise[j])
@@ -224,7 +219,7 @@ class Evolution:
 
 
 
-def main(argv):
+def program(argv):
 
     #evolution of the network
     if len(argv) > 1:
@@ -246,6 +241,11 @@ def main(argv):
     print(">>>>>>FINAL RESULT:")
     for i in range(len(evolution.individuals)):
             print(evolution.individuals[i][0])
+
+def main(argv):
+
+    import cProfile
+    cProfile.run("program(sys.argv)", "test.profile")
 
 if __name__ == "__main__":
     main(sys.argv)
