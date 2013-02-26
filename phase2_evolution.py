@@ -12,7 +12,7 @@ from network import *
 _POPULATION_SIZE = 1000           #size of genome's population
 _TESTS_PER_INDIVIDUAL = 1000      #amount of tests by individual
 _GENERATIONS = 50                 #amount of generations the program will evolve
-_SELECTION_SAMPLE_SIZE = 20       #size of the random sample group where the best ranked will be father or mother
+_SELECTION_SAMPLE_SIZE = 2        #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
 _PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
 _LOG_FILE = "logs/evolution100.txt"
@@ -110,6 +110,7 @@ class Evolution:
                 #[lose energy]
                 new_values_list = network.get_values()
                 if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
+					#FIXME: need to wait 3 turns, to let cells die or not
                     break
                 old_values_list = new_values_list #update list os values for next iteration
                 if k==_ITERATIONS-1:
