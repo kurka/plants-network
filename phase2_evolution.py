@@ -8,9 +8,10 @@ import threading
 import pickle
 from network import *
 
+
 #evolution constrains
-_POPULATION_SIZE = 1000           #size of genome's population
-_TESTS_PER_INDIVIDUAL = 1000      #amount of tests by individual
+_POPULATION_SIZE = 200            #size of genome's population
+_TESTS_PER_INDIVIDUAL = 500       #amount of tests by individual
 _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 2        #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
@@ -18,15 +19,16 @@ _PARENTS_SELECTED = 0             #number of individuals that will stay without 
 _LOG_FILE = "logs/evolution100.txt"
 
 #network constrains
-_N_NODES = 100                    #number of nodes in the network
+_N_NODES = 1000                   #number of nodes in the network
 _TOTAL_CONNECTIONS = int(1.5*_N_NODES)  #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 100                 #how many iterations each individual will try to survive
+_ITERATIONS = 400                 #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_RULE = 45     #lower limit of energy used in rule (the node will *try* to stay above it)
 _UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node will *try* to stay under it)
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
 _UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
+_MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system during execution
 
 
 random.seed()
@@ -72,11 +74,22 @@ class Evolution:
         for i in range(_TESTS_PER_INDIVIDUAL):
             self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
 
+        #old:
+        #for i in range(self.pop_size):
+        #    self.run_individual(i) #TODO: thread this
+			
+        threads = []	
         for i in range(self.pop_size):
-            self.run_individual(i) #TODO: thread this
+            t = threading.Thread(target=self.run_individual, args=(i,))
+            t.start()
+            threads.append(t)
+
+        for i in range(self.pop_size):
+            threads[i].join() #wait for all threads to finish
 
         #order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
+
 
 		#copy genome population to a file, to be able to start from this population, in case of broken execution
         bkp = open("genome.dat", "wb")
@@ -84,6 +97,9 @@ class Evolution:
         bkp.close()
 
     def run_individual(self, num):
+	
+        print(">>starting thread ", num)
+		
         #generate connections_matrix, from the genome
         connections_matrix = [0] * self.matrix_size #initialize with zeroes 
         for connection in self.individuals[num][0]:
@@ -103,6 +119,7 @@ class Evolution:
             #run for certain time
             for k in range(_ITERATIONS):
                 #[input energy]
+                NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
                 #run network
                 network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
                 #update network
@@ -121,6 +138,8 @@ class Evolution:
         #network.print_network(True)
         fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
         self.individuals[num][1] = fitness
+
+        print("<<closing thread ", num)
 
 
 
