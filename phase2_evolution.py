@@ -95,7 +95,7 @@ class Evolution:
         #for i in range(self.pop_size):
         #    threads[i].join() #wait for all threads to finish
 
-        order individuals by fitness
+        #order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
 
 
