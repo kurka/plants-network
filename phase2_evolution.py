@@ -4,7 +4,8 @@
 import sys, os
 import random
 import datetime
-import threading
+#import threading
+from multiprocessing import Pool
 import pickle
 from network import *
 
@@ -16,7 +17,7 @@ _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 2        #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
 _PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
-_LOG_FILE = "logs/evolution100.txt"
+_LOG_FILE = "logs/evolutionmulti.txt"
 
 #network constrains
 _N_NODES = 1000                   #number of nodes in the network
@@ -28,10 +29,59 @@ _UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node 
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
 _UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
-_MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system during execution
+_MAX_ENERGY_INPUT = 30            #maximum amount of energy inputed to the system during execution
 
+_MATRIX_SIZE = int(((_N_NODES-1)*_N_NODES)/2)
 
 random.seed()
+
+def run_individual(args):
+
+    print(">>starting process")
+
+    individual = args[0]
+    noise = args[1]
+
+    #generate connections_matrix, from the genome
+    connections_matrix = [0] * _MATRIX_SIZE #initialize with zeroes 
+    for connection in individual[0]:
+        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
+
+    partial_fitness = 0
+
+    for j in range(_TESTS_PER_INDIVIDUAL):
+        #generate network from genome 
+        network = Network(_N_NODES)
+        network.initialize_from_matrix(connections_matrix)
+
+        #initialize network with values
+        NoiseControl.apply_random_noise(network, noise[j])
+
+        old_values_list = network.get_values()
+        #run for certain time
+        for k in range(_ITERATIONS):
+            #[input energy]
+            NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
+            #run network
+            network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
+            #update network
+            network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
+            #[lose energy]
+            new_values_list = network.get_values()
+            if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
+                #FIXME: need to wait 3 turns, to let cells die or not
+                break
+            old_values_list = new_values_list #update list os values for next iteration
+
+        #evaluate fitness of the individual
+        partial_fitness += network.count_survivors()
+    #network.print_network(True)
+    fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
+    individual[1] = fitness
+    print("<<closing process")
+    return individual
+
+
 
 class Evolution:
     def __init__(self, population_size, n_nodes, total_connections, start_from_file=False, bkp_file_path=""):
@@ -83,17 +133,13 @@ class Evolution:
             self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
 
         #old:
-        for i in range(self.pop_size):
-            self.run_individual(i) #TODO: thread this
-
-        #threads = []
         #for i in range(self.pop_size):
-        #    t = threading.Thread(target=self.run_individual, args=(i,))
-        #    t.start()
-        #    threads.append(t)
+        #    self.run_individual(i) #TODO: thread this
 
-        #for i in range(self.pop_size):
-        #    threads[i].join() #wait for all threads to finish
+        #paralelizing the work
+        pool = Pool()
+        args = [[self.individuals[i], self.noise] for i in range(self.pop_size)]
+        self.individuals = pool.map(run_individual, args)
 
         #order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
@@ -104,50 +150,6 @@ class Evolution:
         bkp = open("execution/genome_"+str(self.generation)+"_fitness.dat", "wb")
         pickle.dump(self.individuals, bkp)
         bkp.close()
-
-    def run_individual(self, num):
-
-        print(">>starting thread ", num)
-
-        #generate connections_matrix, from the genome
-        connections_matrix = [0] * self.matrix_size #initialize with zeroes 
-        for connection in self.individuals[num][0]:
-            connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
-
-        partial_fitness = 0
-
-        for j in range(_TESTS_PER_INDIVIDUAL):
-            #generate network from genome 
-            network = Network(self.n_nodes)
-            network.initialize_from_matrix(connections_matrix)
-
-            #initialize network with values
-            NoiseControl.apply_random_noise(network, self.noise[j])
-
-            old_values_list = network.get_values()
-            #run for certain time
-            for k in range(_ITERATIONS):
-                #[input energy]
-                NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
-                #run network
-                network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
-                #update network
-                network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
-                #[lose energy]
-                new_values_list = network.get_values()
-                if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
-                    #FIXME: need to wait 3 turns, to let cells die or not
-                    break
-                old_values_list = new_values_list #update list os values for next iteration
-
-            #evaluate fitness of the individual
-            partial_fitness += network.count_survivors()
-        #network.print_network(True)
-        fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
-        self.individuals[num][1] = fitness
-
-        print("<<closing thread ", num)
-
 
 
     def evolute(self):
