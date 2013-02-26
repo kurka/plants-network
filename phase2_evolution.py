@@ -22,7 +22,7 @@ _LOG_FILE = "logs/evolution100.txt"
 _N_NODES = 1000                   #number of nodes in the network
 _TOTAL_CONNECTIONS = int(1.5*_N_NODES)  #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 400                 #how many iterations each individual will try to survive
+_ITERATIONS = 100                 #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_RULE = 45     #lower limit of energy used in rule (the node will *try* to stay above it)
 _UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node will *try* to stay under it)
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
@@ -39,6 +39,7 @@ class Evolution:
         self.n_nodes = n_nodes
         self.pop_size = population_size
         self.noise = []
+        self.generation = 0 #keep track of which generation is currently in
 
         #initialize the log file
         self.log_file = open(_LOG_FILE, 'a')
@@ -70,36 +71,44 @@ class Evolution:
 
     def step(self):
 
+        #save population in a file, to be able to restore it
+        filename = "execution/genome"
+        bkp = open("execution/genome_"+str(self.generation)+"_initial.dat", "wb")
+        pickle.dump(self.individuals, bkp)
+        bkp.close()
+
+
         #generate random noise to be inputed in all networks tested in this generation
         for i in range(_TESTS_PER_INDIVIDUAL):
             self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
 
         #old:
+        for i in range(self.pop_size):
+            self.run_individual(i) #TODO: thread this
+
+        #threads = []
         #for i in range(self.pop_size):
-        #    self.run_individual(i) #TODO: thread this
-			
-        threads = []	
-        for i in range(self.pop_size):
-            t = threading.Thread(target=self.run_individual, args=(i,))
-            t.start()
-            threads.append(t)
+        #    t = threading.Thread(target=self.run_individual, args=(i,))
+        #    t.start()
+        #    threads.append(t)
 
-        for i in range(self.pop_size):
-            threads[i].join() #wait for all threads to finish
+        #for i in range(self.pop_size):
+        #    threads[i].join() #wait for all threads to finish
 
-        #order individuals by fitness
+        order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
 
 
-		#copy genome population to a file, to be able to start from this population, in case of broken execution
+        #copy genome population to a file, to be able to start from this population, in case of broken execution
         bkp = open("genome.dat", "wb")
+        bkp = open("execution/genome_"+str(self.generation)+"_fitness.dat", "wb")
         pickle.dump(self.individuals, bkp)
         bkp.close()
 
     def run_individual(self, num):
-	
+
         print(">>starting thread ", num)
-		
+
         #generate connections_matrix, from the genome
         connections_matrix = [0] * self.matrix_size #initialize with zeroes 
         for connection in self.individuals[num][0]:
@@ -127,11 +136,9 @@ class Evolution:
                 #[lose energy]
                 new_values_list = network.get_values()
                 if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
-					#FIXME: need to wait 3 turns, to let cells die or not
+                    #FIXME: need to wait 3 turns, to let cells die or not
                     break
                 old_values_list = new_values_list #update list os values for next iteration
-                if k==_ITERATIONS-1:
-                    print("went until the end!")
 
             #evaluate fitness of the individual
             partial_fitness += network.count_survivors()
@@ -143,7 +150,7 @@ class Evolution:
 
 
 
-    def evolute(self, gen):
+    def evolute(self):
         new_generation = []
 
         #keep some of them in new generation (elitist selection)
@@ -160,11 +167,7 @@ class Evolution:
             new_generation.append([child, 0])
 
         self.individuals = new_generation #Exchange old individuals with the new generation
-
-        #copy genome population to a file, to be able to start from this population, in case of broken execution
-        bkp = open("genome_"+str(gen)+".dat", "wb")
-        pickle.dump(self.individuals, bkp)
-        bkp.close()
+        self.generation += 1
 
 
     def select(self, sample_size):
@@ -190,7 +193,7 @@ class Evolution:
 
         return child
 
-    def print_results(self, generation):
+    def print_results(self):
         #print best result, avg result, median, worst and the phenotype (represented in hexadecimal) of the best result
         best = self.individuals[self.pop_size-1][1] #self.individuals list was sorted in beggining of evolution method
         median = self.individuals[round(self.pop_size/2)][1]
@@ -202,7 +205,7 @@ class Evolution:
         best_phenotype.sort()
 
         #print in the output
-        print("generation:", generation)
+        print("generation:", self.generation)
         print("Best =", best, "avg =", avg, "median=", median, "worst =", worst)
         print("Best phenotype:")
         print(best_phenotype)
@@ -210,7 +213,7 @@ class Evolution:
         #print in file
         self.log_file = open(_LOG_FILE, 'a') #open and close file every print, to save broken executions
 
-        self.log_file.write("generation: " + str(generation) + "\n")
+        self.log_file.write("generation: " + str(self.generation) + "\n")
         self.log_file.write("Best = " + str(best) + " avg = " + str(avg) + " median= " + str(median) + " worst = " + str(worst) + "\n")
         self.log_file.write("Best phenotype:" + "\n")
         self.log_file.write(str(best_phenotype) + "\n")
@@ -235,9 +238,9 @@ def main(argv):
         print(">>>>>>GENERATION", i)
         #run program
         evolution.step()
-        evolution.print_results(i)
+        evolution.print_results()
         #evolve
-        evolution.evolute(i)
+        evolution.evolute()
     print(">>>>>>FINAL RESULT:")
     for i in range(len(evolution.individuals)):
             print(evolution.individuals[i][0])

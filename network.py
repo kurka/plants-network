@@ -116,13 +116,14 @@ class Network:
         #check which nodes are under or above the safe energy levels
         for node in self.nodes:
             self.values_list[self.nodes.index(node)] = node.value #update the values_list
-            if node.value < lower_limit or node.value > upper_limit:
-                node.endanger += 1 #for each generation it is out of the safe limits, increase endenger
-            else:
-                node.endanger = 0 #when energy levels are restored to safe limits, clear endenger index
+            if node.is_alive:
+                if node.value < lower_limit or node.value > upper_limit:
+                    node.endanger += 1 #for each generation it is out of the safe limits, increase endenger
+                else:
+                    node.endanger = 0 #when energy levels are restored to safe limits, clear endenger index
 
-            if node.endanger >= endanger_limit and node.is_alive: #kill node if it is in endanger condition for too many generations
-                self.remove_node(node)
+                if node.endanger >= endanger_limit and node.is_alive: #kill node if it is in endanger condition for too many generations
+                    self.remove_node(node)
 
     def remove_node(self, node):
         #remove node from network (i.e.: remove connections to and from it)
@@ -206,10 +207,11 @@ class NoiseControl:
         else: #create a new noise patern now
             if negative_range:
                 for node in network.nodes:
-                    node.value += random.randrange(noise_range*(-1), noise_range) #generate either a positive or a negative value
+                        node.value += random.randrange(noise_range*(-1), noise_range) #generate either a positive or a negative value
             elif not negative_range:
                 for node in network.nodes:
-                    node.value += random.randrange(0, noise_range) #generate only positive values
+                    if node.is_alive:
+                        node.value += random.randrange(0, noise_range) #generate only positive values
 
 
     def apply_circular_noise(network, noise_range=_NODE_VALUES_RANGE):
