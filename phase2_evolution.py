@@ -8,6 +8,7 @@ import datetime
 from multiprocessing import Pool
 import pickle
 from network import *
+from numpy import var, std
 
 
 #evolution constrains
@@ -43,6 +44,7 @@ def run_individual(args):
     noise = args[1]
 
     partial_fitness = 0
+    partial_fitness_stats = []
 
     for j in range(_TESTS_PER_INDIVIDUAL):
         #generate network from genome 
@@ -53,6 +55,7 @@ def run_individual(args):
         NoiseControl.apply_random_noise(network, noise[j])
 
         old_values_list = network.get_values()
+        similar_runs = 0
         #run for certain time
         for k in range(_ITERATIONS):
             #[input energy]
@@ -64,12 +67,25 @@ def run_individual(args):
             #[lose energy]
             new_values_list = network.get_values()
             if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
-                #FIXME: need to wait 3 turns, to let cells die or not
+                similar_runs += 1
+            else:
+                similar_runs = 0
+            if similar_runs == 3:
                 break
             old_values_list = new_values_list #update list os values for next iteration
 
         #evaluate fitness of the individual
-        partial_fitness += network.count_survivors()
+        indiv_fitness = network.count_survivors()
+        partial_fitness += indiv_fitness
+        partial_fitness_stats.append(indiv_fitness)
+
+    #testing if the _TESTS_PER_INDIVIDUAL attribute is ok
+    print("fitness per generation, var, std:")
+    print(partial_fitness_stats)
+    print(var(partial_fitness_stats))
+    print(std(partial_fitness_stats))
+
+
     #network.print_network(True)
     fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
     individual[1] = fitness
