@@ -3,6 +3,8 @@
 
 import random
 import datetime
+import math
+
 
 #constants 
 _ITERATIONS = 20                    #number of cycles the sytem will run
@@ -48,19 +50,27 @@ class Network:
             new_node = Node() #create the node
             self.nodes.append(new_node)
 
+    def initialize_from_genome(self, genome):
+    #initialize connections, from the genome.
+        #genome is an array with the positions, in the connections matrix, where there is connections.
+        for p in genome:
+            line = int((1 + math.sqrt(1 + 8*p)) / 2.0)
+            column = int(p - (line * (line-1)) / 2.0)
+
+            self.nodes[line].connections.append(column)
+            self.nodes[column].connections.append(line) #connect in both ways
+
     def initialize_from_matrix(self, connections_matrix):
     #initialize connections, using a connections_matrix.
 
         #connections_matrix is an array with the values of a triangular matrix below the main diagonal. 
         #(eg: connections_matrix[0] == matrix[1,0]; connections_matrix[1] == matrix[2,0]; connections_matrix[2] == matrix[2,1]; ... 
         position = 0 #current position in connections_matrix array
-        a = 0
         for i in range(self.n_nodes):
             for j in range(i):
                 if connections_matrix[position] == 1:
                     self.nodes[i].connections.append(j)
                     self.nodes[j].connections.append(i) #connect in both ways
-                    a += 1
                 position += 1
 
 
@@ -114,8 +124,9 @@ class Network:
 
     def update_network(self, lower_limit, upper_limit, endanger_limit):
         #check which nodes are under or above the safe energy levels
+        i = 0
         for node in self.nodes:
-            self.values_list[self.nodes.index(node)] = node.value #update the values_list
+            self.values_list[i] = node.value #update the values_list
             if node.is_alive:
                 if node.value < lower_limit or node.value > upper_limit:
                     node.endanger += 1 #for each generation it is out of the safe limits, increase endenger
@@ -123,12 +134,12 @@ class Network:
                     node.endanger = 0 #when energy levels are restored to safe limits, clear endenger index
 
                 if node.endanger >= endanger_limit and node.is_alive: #kill node if it is in endanger condition for too many generations
-                    self.remove_node(node)
+                    self.remove_node(node, i)
+            i += 1
 
-    def remove_node(self, node):
+    def remove_node(self, node, node_index):
         #remove node from network (i.e.: remove connections to and from it)
 
-        node_index = self.nodes.index(node)
         #print(">>OMG, node", node_index, "is dead!")
         #first remove the connections to this node
         for connection in node.connections:
@@ -215,7 +226,6 @@ class NoiseControl:
 
 
     def apply_circular_noise(network, noise_range=_NODE_VALUES_RANGE):
-        import math
         net_size = len(network.nodes)
         for i in range(net_size):
             networl.nodes[i].value += math.cos(i/float(net_size) * 2*math.pi) * noise_range #apply circular noise to the network
@@ -244,5 +254,5 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+    main()
 
