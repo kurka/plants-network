@@ -85,6 +85,8 @@ class Evolution:
         self.pop_size = population_size
         self.noise = []
         self.generation = 0 #keep track of which generation is currently in
+        #paralelizing the work
+        self.pool = Pool()
 
         #initialize the log file
         self.log_file = open(_LOG_FILE, 'a')
@@ -131,10 +133,8 @@ class Evolution:
         #for i in range(self.pop_size):
         #    self.run_individual(i) #TODO: thread this
 
-        #paralelizing the work
-        pool = Pool()
         args = [[self.individuals[i], self.noise] for i in range(self.pop_size)]
-        self.individuals = pool.map(run_individual, args)
+        self.individuals = self.pool.map(run_individual, args)
 
         #order individuals by fitness
         self.individuals.sort(key = lambda x: x[1]) #Sort the sample by fitness
