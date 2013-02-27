@@ -267,8 +267,9 @@ def program(argv):
 
 def main(argv):
 
-    import cProfile
-    cProfile.run("program(sys.argv)", "test.profile")
+    #import cProfile
+    #cProfile.run("program(sys.argv)", "test.profile")
+    program(argv)
 
 if __name__ == "__main__":
     main(sys.argv)
