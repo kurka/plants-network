@@ -8,12 +8,12 @@ import datetime
 from multiprocessing import Pool
 import pickle
 from network import *
-from numpy import var, std
+from numpy import var, std, sqrt
 
 
 #evolution constrains
 _POPULATION_SIZE = 200            #size of genome's population
-_TESTS_PER_INDIVIDUAL = 500       #amount of tests by individual
+_TESTS_PER_INDIVIDUAL = 1000       #amount of tests by individual
 _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 10       #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02             #chance of gene being mutated
@@ -38,7 +38,7 @@ random.seed()
 
 def run_individual(args):
 
-    print(">>starting process")
+    #print(">>starting process")
 
     individual = args[0]
     noise = args[1]
@@ -80,16 +80,16 @@ def run_individual(args):
         partial_fitness_stats.append(indiv_fitness)
 
     #testing if the _TESTS_PER_INDIVIDUAL attribute is ok
-    print("fitness per generation, var, std:")
-    print(partial_fitness_stats)
-    print(var(partial_fitness_stats))
-    print(std(partial_fitness_stats))
+    #print("fitness per generation, var, std:")
+    #print(partial_fitness_stats)
+    #print(var(partial_fitness_stats))
+    #print(std(partial_fitness_stats))
 
 
     #network.print_network(True)
     fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
     individual[1] = fitness
-    print("<<closing process")
+    #print("<<closing process")
     return individual
 
 
@@ -147,7 +147,7 @@ class Evolution:
 
         #old:
         #for i in range(self.pop_size):
-        #    self.run_individual(i) #TODO: thread this
+        #    self.run_individual(i) 
 
         args = [[self.individuals[i], self.noise] for i in range(self.pop_size)]
         self.individuals = self.pool.map(run_individual, args)
@@ -185,7 +185,7 @@ class Evolution:
     def select(self, sample_size):
         sample = random.sample(self.individuals, sample_size) #get a sample, to select the parent
         sample.sort(key = lambda x: x[1]) #Sort the sample by fitness
-        return sample[sample_size - 1][0] #Return phenotype of the best individual
+        return sample[-1][0] #Return phenotype of the best individual
 
     def sex(self, father, mother, mutation_rate):
         #1-crossover
@@ -198,12 +198,27 @@ class Evolution:
         #2-mutation
         for i in range(len(child)): #There is a mutation_rate of being changed for each gene of the phenotype
             if random.random() < mutation_rate:
+                #the mutation will create a new edge, changing only one side of it (keeping one of the nodes with the same number of connections)
+                #new_neighbour = random.randrange(self.n_nodes) #choose which neighbour will receive the new end of the edge
+                #1 - 
+                #new_gene = get_
                 new_gene = random.randrange(self.genome_size) #choose a new gene randomly #TODO: choose only from neighbours
                 while(new_gene in child): #it need to be unique
                     new_gene = random.randrange(self.genome_size)
                 child[i] = new_gene
 
         return child
+
+    #def matrix_to_array(line, column):
+        #given a pair of lower triangular matrix coordinates, return its position in an compacted array
+
+
+    #def array__to_matrix(p):
+        #given an position in an array, return it equivalent position in a matrix
+    #    line = int((1 + sqrt(1 + 8*p)) / 2.0)
+    #    column = int(p - (line * (line-1)) / 2.0)
+
+
 
     def print_results(self):
         #print best result, avg result, median, worst and the phenotype (represented in hexadecimal) of the best result
@@ -219,8 +234,8 @@ class Evolution:
         #print in the output
         print("generation:", self.generation)
         print("Best =", best, "avg =", avg, "median=", median, "worst =", worst)
-        print("Best phenotype:")
-        print(best_phenotype)
+        #print("Best phenotype:")
+        #print(best_phenotype)
 
         #print in file
         self.log_file = open(_LOG_FILE, 'a') #open and close file every print, to save broken executions
