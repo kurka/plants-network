@@ -8,7 +8,8 @@ import datetime
 from multiprocessing import Pool
 import pickle
 from network import *
-from numpy import var, std, sqrt
+import math
+#from numpy import var, std, sqrt
 
 
 #evolution constrains
@@ -44,7 +45,6 @@ def run_individual(args):
     noise = args[1]
 
     partial_fitness = 0
-    partial_fitness_stats = []
 
     for j in range(_TESTS_PER_INDIVIDUAL):
         #generate network from genome 
@@ -77,14 +77,6 @@ def run_individual(args):
         #evaluate fitness of the individual
         indiv_fitness = network.count_survivors()
         partial_fitness += indiv_fitness
-        partial_fitness_stats.append(indiv_fitness)
-
-    #testing if the _TESTS_PER_INDIVIDUAL attribute is ok
-    #print("fitness per generation, var, std:")
-    #print(partial_fitness_stats)
-    #print(var(partial_fitness_stats))
-    #print(std(partial_fitness_stats))
-
 
     #network.print_network(True)
     fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
@@ -189,7 +181,6 @@ class Evolution:
 
     def sex(self, father, mother, mutation_rate):
         #1-crossover
-
         #put the parents genes in a bag, removing duplicates
         bag = list(set(father+mother))
         #the child will be a sample from this bag
@@ -199,25 +190,27 @@ class Evolution:
         for i in range(len(child)): #There is a mutation_rate of being changed for each gene of the phenotype
             if random.random() < mutation_rate:
                 #the mutation will create a new edge, changing only one side of it (keeping one of the nodes with the same number of connections)
-                #new_neighbour = random.randrange(self.n_nodes) #choose which neighbour will receive the new end of the edge
-                #1 - 
-                #new_gene = get_
-                new_gene = random.randrange(self.genome_size) #choose a new gene randomly #TODO: choose only from neighbours
+                old_gene_line, old_gene_column = self.array_to_matrix(child[i])
+                new_gene_column = random.randrange(self.n_nodes) #choose which node will receive the new end of the edge
+                new_gene = self.matrix_to_array(old_gene_line, new_gene_column)
                 while(new_gene in child): #it need to be unique
-                    new_gene = random.randrange(self.genome_size)
+                    new_gene_column = random.randrange(self.n_nodes)
+                    new_gene = self.matrix_to_array(old_gene_line, new_gene_column)
                 child[i] = new_gene
 
         return child
 
-    #def matrix_to_array(line, column):
+    def matrix_to_array(self, line, column):
         #given a pair of lower triangular matrix coordinates, return its position in an compacted array
+        pos = int( (line * (line - 1)) / 2 + column)
+        return pos
 
-
-    #def array__to_matrix(p):
+    def array_to_matrix(self, pos):
         #given an position in an array, return it equivalent position in a matrix
-    #    line = int((1 + sqrt(1 + 8*p)) / 2.0)
-    #    column = int(p - (line * (line-1)) / 2.0)
+        line = int((1 + math.sqrt(1 + 8*pos)) / 2.0)
+        column = int(pos - (line * (line-1)) / 2.0)
 
+        return line, column
 
 
     def print_results(self):
