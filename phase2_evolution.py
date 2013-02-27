@@ -141,7 +141,6 @@ class Evolution:
 
 
         #copy genome population to a file, to be able to start from this population, in case of broken execution
-        bkp = open("genome.dat", "wb")
         bkp = open("execution/genome_"+str(self.generation)+"_fitness.dat", "wb")
         pickle.dump(self.individuals, bkp)
         bkp.close()
