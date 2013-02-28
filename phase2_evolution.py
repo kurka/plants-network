@@ -13,7 +13,7 @@ import math
 
 
 #evolution constrains
-_POPULATION_SIZE = 200            #size of genome's population
+_POPULATION_SIZE = 50            #size of genome's population
 _TESTS_PER_INDIVIDUAL = 1000       #amount of tests by individual
 _GENERATIONS = 50                 #amount of generations the program will evolve
 _SELECTION_SAMPLE_SIZE = 10       #size of the random sample group where the best ranked will be father or mother
