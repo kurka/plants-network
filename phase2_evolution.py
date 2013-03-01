@@ -13,19 +13,19 @@ import math
 
 
 #evolution constrains
-_POPULATION_SIZE = 50            #size of genome's population
+_POPULATION_SIZE = 50              #size of genome's population
 _TESTS_PER_INDIVIDUAL = 1000       #amount of tests by individual
-_GENERATIONS = 50                 #amount of generations the program will evolve
-_SELECTION_SAMPLE_SIZE = 2       #size of the random sample group where the best ranked will be father or mother
-_MUTATION_RATE = 0.02             #chance of gene being mutated
-_PARENTS_SELECTED = 0             #number of individuals that will stay without crossover or mutation for the next generation (elitist selection)
+_GENERATIONS = 50                  #amount of generations the program will evolve
+_SELECTION_SAMPLE_SIZE = 4         #size of the random sample group where the best ranked will be father or mother
+_MUTATION_RATE = 0.02              #chance of gene being mutated
+_PARENTS_SELECTED = 0              #elitism
 _LOG_FILE = "logs/evolutionmulti.txt"
 
 #network constrains
 _N_NODES = 1000                   #number of nodes in the network
 _TOTAL_CONNECTIONS = int(2*_N_NODES)  #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 100                 #how many iterations each individual will try to survive
+_ITERATIONS = 200                 #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_RULE = 45     #lower limit of energy used in rule (the node will *try* to stay above it)
 _UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node will *try* to stay under it)
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
@@ -59,7 +59,7 @@ def run_individual(args):
         #run for certain time
         for k in range(_ITERATIONS):
             #[input energy]
-            #NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
+            NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
             #run network
             network.run(_LOWER_ENERGY_LIMIT_RULE, _UPPER_ENERGY_LIMIT_RULE)
             #update network
