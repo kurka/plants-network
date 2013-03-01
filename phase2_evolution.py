@@ -120,6 +120,8 @@ class Evolution:
             bkp_file = open(bkp_file_path, "rb")
             self.individuals = pickle.load(bkp_file)
             self.log_file.write(">>>>>>>>>>>>>>>>> Continuing from previous execution. " + str(t0) + "\n")
+            import re
+            self.generation = int(re.search('\d+', bkp_file_path).group())
 
         self.log_file.close()
 

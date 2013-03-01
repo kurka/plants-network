@@ -4,6 +4,7 @@
 import sys, os
 import pickle
 from network import *
+import networkx as nx
 #from graph_tool.all import *
 
 def connections_frequency(genome_population):
@@ -48,6 +49,16 @@ def create_graphtool_net(n_nodes, connections_matrix):
 
     return g
 
+def create_networkx_net(n_nodes, connections_matrix):
+    g = nx.Graph()
+
+    position = 0
+    for i in range(n_nodes):
+        for j in range(i):
+            if connections_matrix[position] == 1:
+                g.add_edge(i, j)
+    return g
+
 def draw_graphtool(graph):
     #pos = fruchterman_reingold_layout(g, circular=True)
     pos = arf_layout(graph)
@@ -57,11 +68,15 @@ def draw_graphtool(graph):
 
 def draw_dot(graph):
     graph.save("analysis/graphviz.dot")
-    os.system("circo -Tsvg logs/100.dot -o analysis/graphviz.svg")
+    os.system("circo -Tsvg analysis/graphviz.dot -o analysis/graphviz.svg")
 
+def draw_dot_netx(netx):
+    nx.write_dot(netx,"analysis/grid.dot")
+    os.system("circo -Tsvg analysis/grid.dot -o analysis/netx.svg")
 
 def graphtool_analysis(graph):
 
+    print("bla")
     #vertex_hist - Return the vertex histogram of the given degree type or property.
 
     #edge_hist - Return the edge histogram of the given property.
@@ -85,7 +100,7 @@ def main(argv):
     bkp_file = open(argv[2], "rb")
     genome_population = pickle.load(bkp_file)
     pop_size = len(genome_population)
-    genome = genome_population[pop_size-1][0] #get the last genome, to test. if the list is initialized, it will contain the best individual
+    genome = genome_population[-1][0] #get the last genome, to test. if the list is initialized, it will contain the best individual
     matrix_size = int(((n_nodes - 1)*n_nodes)/2) #this is the size of the triangular region lower to the main diagonal of the matrix.
 
     #generate connections_matrix, from the genome
@@ -94,12 +109,14 @@ def main(argv):
         connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
 
     #analyse frequency of connections, among the population
-    connections_frequency(genome_population)
+    #connections_frequency(genome_population)
 
     #create Network object
-    net = create_network_net(n_nodes, connections_matrix)
+    #net = create_network_net(n_nodes, connections_matrix)
     #net.print_network(True)
 
+    netx = create_networkx_net(n_nodes, connections_matrix)
+    draw_dot_netx(netx)
     #Create graphtool object
     #g = create_graphtool_net(n_nodes, connections_matrix)
 

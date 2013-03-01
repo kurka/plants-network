@@ -15,16 +15,30 @@ _LOG_FILE = "logs/rule.txt"
 #network constrains
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
 _ITERATIONS = 20                  #how many iterations each individual will try to survive
-_LOWER_ENERGY_LIMIT_DANGER = 30   #absolute lower limit. If the node stay bellow this level for G generations, it dies
-_UPPER_ENERGY_LIMIT_DANGER = 70   #absolute upper limit. If the node stay above this level for G generations, it dies
+_LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
+_UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
 
 
 random.seed()
 
+    n_nodes = int(argv[1]) #number of nodes in the network
+
+    #generate connections_matrix, from the genome
+    connections_matrix = [0] * matrix_size #initialize with zeroes 
+    for connection in genome:
+        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
+
+    #analyse frequency of connections, among the population
+    #connections_frequency(genome_population)
+
+    #create Network object
+    #net = create_network_net(n_nodes, connections_matrix)
+    #net.print_network(True)
+
 def main(argv):
     if len(argv) != 3:
-        print("usage: rules_evolution [n_nodes] [list]")
+        print("usage: rules_evolution [n_nodes] [pickle_file]")
         print(len(argv))
         return
 
@@ -32,16 +46,14 @@ def main(argv):
     #the network will be chosen from the result of the network evolution
     n_nodes = int(argv[1]) #number of nodes in the network
     matrix_size = int(((n_nodes - 1)*n_nodes)/2) #this is the size of the triangular region lower to the main diagonal of the matrix.
-    network_genome = eval(argv[2])
-
-    #generate connections_matrix, from the network_genome
-    connections_matrix = [0] * matrix_size #initialize with zeroes 
-    for connection in network_genome:
-        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
+    pickle_file = open(argv[2], "rb")
+    genome_population = pickle.load(pickle_file)
+    pop_size = len(genome_population)
+    genome = genome_population[-1][0] #get the last genome, to test. if the list is initialized, it will contain the best individual
 
     #generate network from genome 
     network = Network(n_nodes)
-    network.initialize_from_matrix(connections_matrix)
+    network.initialize_from_genome(genome)
 
 
     ##create the candidates
@@ -65,7 +77,7 @@ def main(argv):
 
         for j in range(_TESTS_PER_INDIVIDUAL):
             network = Network(n_nodes)
-            network.initialize_from_matrix(connections_matrix) #FIXME
+            network.initialize_from_genome(genome) #FIXME: dont need to create everytime
             #initialize network with values
             NoiseControl.apply_random_noise(network, noise[j])
 
