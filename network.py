@@ -175,7 +175,7 @@ class Network:
 
 
 
-class SmallWorld(Network):
+class SmallWorldNetwork(Network):
     def __init__(self, n_nodes, n_connections, p):
         #Initialize a small-world network.
         self.n_nodes = n_nodes
@@ -202,6 +202,12 @@ class SmallWorld(Network):
                 self.nodes[old_target].connections.remove(node_id) #remove connection from old target
                 node.connections[j] = target #replace old connection to new target
                 self.nodes[target].connections.append(node_id) #add new connection on target node (two-way connection)
+
+#class Global_Network(Network):
+#class LocalNetwork(Network):
+#class VonNeumannNetwork(Network):
+#class RandomNetwork(Network):
+#class ScaleFreeNetwork(Network):
 
 class NoiseControl:
     """Implementations of different input paterns to nodes in a network"""
@@ -236,7 +242,7 @@ class NoiseControl:
 
 def main():
     #generate network
-    network = SmallWorld(_N_NODES, _N_CONNECTIONS, _P)
+    network = SmallWorldNetwork(_N_NODES, _N_CONNECTIONS, _P)
     #[initialize network with values]
     NoiseControl.apply_random_noise(network, _NODE_VALUES_RANGE)
     network.print_network(True)
