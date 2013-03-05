@@ -217,6 +217,10 @@ class NoiseControl:
             random_noise.append(random.randrange(noise_range))
         return random_noise
 
+    def apply_regular_noise(network, noise):
+        for node in network.nodes:
+            node.value = noise
+
     def apply_random_noise(network, predefined_noise=[], noise_range=_NODE_VALUES_RANGE, negative_range=True):
         if predefined_noise: #if it is just applying a noise created befoere in random_noise_generator
             for i in range(len(network.nodes)):
