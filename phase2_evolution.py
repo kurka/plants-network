@@ -13,10 +13,10 @@ import math
 
 
 #evolution constrains
-_POPULATION_SIZE = 50              #size of genome's population
+_POPULATION_SIZE = 25              #size of genome's population
 _TESTS_PER_INDIVIDUAL = 1000       #amount of tests by individual
-_GENERATIONS = 50                  #amount of generations the program will evolve
-_SELECTION_SAMPLE_SIZE = 4         #size of the random sample group where the best ranked will be father or mother
+_GENERATIONS = 100                 #amount of generations the program will evolve
+_SELECTION_SAMPLE_SIZE = 2         #size of the random sample group where the best ranked will be father or mother
 _MUTATION_RATE = 0.02              #chance of gene being mutated
 _PARENTS_SELECTED = 0              #elitism
 _LOG_FILE = "logs/evolutionmulti.txt"
@@ -25,7 +25,7 @@ _LOG_FILE = "logs/evolutionmulti.txt"
 _N_NODES = 1000                   #number of nodes in the network
 _TOTAL_CONNECTIONS = int(2*_N_NODES)  #fixed amount of connections, distributed in the graph
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 200                 #how many iterations each individual will try to survive
+_ITERATIONS = 100                 #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_RULE = 45     #lower limit of energy used in rule (the node will *try* to stay above it)
 _UPPER_ENERGY_LIMIT_RULE = 55     #upper limit of energy used in rule (the node will *try* to stay under it)
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
@@ -42,7 +42,7 @@ def run_individual(args):
     #print(">>starting process")
 
     individual = args[0]
-    noise = args[1]
+    #noise = args[1]
 
     partial_fitness = 0
 
@@ -51,8 +51,9 @@ def run_individual(args):
         network = Network(_N_NODES)
         network.initialize_from_genome(individual[0])
 
-        #initialize network with values
-        NoiseControl.apply_random_noise(network, noise[j])
+        #initialize network with the avg value
+        NoiseControl.apply_regular_noise(network, (_LOWER_ENERGY_LIMIT_DANGER+_UPPER_ENERGY_LIMIT_DANGER)/2)
+    
 
         old_values_list = network.get_values()
         similar_runs = 0
@@ -136,8 +137,8 @@ class Evolution:
 
 
         #generate random noise to be inputed in all networks tested in this generation
-        for i in range(_TESTS_PER_INDIVIDUAL):
-            self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
+        #for i in range(_TESTS_PER_INDIVIDUAL):
+        #    self.noise.append(NoiseControl.random_noise_generator(self.n_nodes, _NODE_VALUES_RANGE))
 
         #old:
         #for i in range(self.pop_size):
