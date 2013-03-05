@@ -36,3 +36,7 @@ nosetests.xml
 
 #meus
 #execution/
+execution//
+50\,\ torneio\ 10\,\ 1500\ arestas\,\ input\ 30/
+50\,\ torneio\ 2\,\ 2000\ arestas\,\ input\ 10\,\ sem\ ruido\ durante
+50\,\ torneio\ 2\,\ 2000\ arestas\,\ input\ 10

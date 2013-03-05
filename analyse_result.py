@@ -7,20 +7,40 @@ from network import *
 import networkx as nx
 #from graph_tool.all import *
 
-def connections_frequency(genome_population):
-    #counts the frequency of possible connections, in the genome population
+def population_analysis(n_nodes, genome_population):
 
+    print(">>>>>>analysis of the whole population")
+
+    fit = [genome_population[j][1] for j in range(50)]
+    edges_max = n_nodes * (n_nodes-1) / 2.0
+    gen = [genome_population[j][0] for j in range(50)]
+
+    #1
+    print("1 - fitness")
+    print(fit)
+
+    #2
+    print("2 - Frequency of connections")
     #concatenate all genome_lists
-    conc_genome = []
-    for genome in genome_population:
-        conc_genome += genome[0]
+    from functools import reduce
+    gens = reduce(lambda a, b: a + b, gen)
 
     import collections
-    counter=collections.Counter(conc_genome)
+    counter=collections.Counter(gens)
 
-    print("frequency of connections in the genome population:")
-    print(counter.values())
+    print("top 100 frequency of connections in the genome population:")
+    #print(counter.values())
     print(counter.most_common(100))
+
+    #3
+    print("3 - genes similarity")
+    soma = 0
+    for i in range(len(gen)):
+        for j in range(i):
+                soma += len(set(gen[i]) & set(gen[j]))
+    avg = soma / (len(gen)*(len(gen)-1)/2.0)
+    print("average similarity: ", avg)
+
     print()
 
 
@@ -108,7 +128,8 @@ def main(argv):
     for connection in genome:
         connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
 
-    #analyse frequency of connections, among the population
+    #analyse population
+    population_analysis(n_nodes, genome_population)
     #connections_frequency(genome_population)
 
     #create Network object

@@ -9,37 +9,23 @@ import pickle
 from network import *
 
 #evolution constrains
-_TESTS_PER_INDIVIDUAL = 10      #amount of tests by individual
+_TESTS_PER_INDIVIDUAL = 100      #amount of tests by individual
 _LOG_FILE = "logs/rule.txt"
 
 #network constrains
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 20                  #how many iterations each individual will try to survive
+_ITERATIONS = 100                  #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
 _UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
+_MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system during execution
 
 
 random.seed()
 
-    n_nodes = int(argv[1]) #number of nodes in the network
-
-    #generate connections_matrix, from the genome
-    connections_matrix = [0] * matrix_size #initialize with zeroes 
-    for connection in genome:
-        connections_matrix[connection] = 1 #replace to 1, the edges indicated in the genome
-
-    #analyse frequency of connections, among the population
-    #connections_frequency(genome_population)
-
-    #create Network object
-    #net = create_network_net(n_nodes, connections_matrix)
-    #net.print_network(True)
-
 def main(argv):
     if len(argv) != 3:
         print("usage: rules_evolution [n_nodes] [pickle_file]")
-        print(len(argv))
         return
 
     ##create network
@@ -64,7 +50,6 @@ def main(argv):
     for i in range(values_range):
         for j in range(values_range):
             candidates.append([i,j,0])
-    print(candidates)
     ##run execution
     #generate random noise to be inputed in all networks tested
     noise = []
@@ -84,6 +69,7 @@ def main(argv):
             #run for certain time
             for k in range(_ITERATIONS):
                 #[input energy]
+                NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
                 #run network
                 network.run(candidates[i][0], candidates[i][1]) #test candidates rule
                 #update network
@@ -102,13 +88,13 @@ def main(argv):
 
 
     #copy candidates population to a file
-    result_file = open("rules_result.dat", "wb")
+    result_file = open("rules_result_noise.dat", "wb")
     pickle.dump(candidates, result_file)
     result_file.close()
 
     print("100 best rules:")
     print("format: (lower, high, fitness)")
-    for i in range(1, 1001):
+    for i in range(100, 1, -1):
         print(candidates[-i][0], candidates[i][1], candidates[i][2])
 
     #TODO: enhance print_results
