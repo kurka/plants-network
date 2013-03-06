@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+#ensinando git pro marcos
 import random
 import datetime
 import math
