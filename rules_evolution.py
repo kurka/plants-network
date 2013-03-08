@@ -53,9 +53,12 @@ def create_local(args):
 def create_global(args):
     return GlobalNetwork(args[0]) #n_nodes
 
+def create_von_neuman(args):
+    return VonNeumannNetwork(args[0]) #n_nodes - must be perfect square
+
+
 #def create_random():
 #def create_scale_free():
-#def create_von_neumann():
 
 def run_test(candidates, create_net_func, func_args, init_noise=[]):
     ##run execution in paralel
@@ -81,7 +84,6 @@ def iteration(args):
 
     partial_fitness = 0
 
-    print("it")
     for j in range(_TESTS_PER_INDIVIDUAL):
         network = create_net_func(func_args)
         #initialize network with values
@@ -143,9 +145,10 @@ def main(argv):
 
     ########run tests
     test_params = [
-    [candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
-    [candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world noise
-    [candidates.copy(), create_global, [_N_NODES], noise] #global args
+        [candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
+        [candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
+        [candidates.copy(), create_global, [_N_NODES], noise], #global args
+        [candidates.copy(), create_von_neuman, [100], noise] #von neuman args
     ]
 
     results = []

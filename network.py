@@ -237,7 +237,47 @@ class GlobalNetwork(Network):
         self.nodes[i].add_connection(j)
         self.nodes[j].add_connection(i)
 
-#class VonNeumannNetwork(Network):
+class VonNeumannNetwork(Network):
+    """In a Global Network, nodes are connected in a circular grid
+        Parameters: n_nodes"""
+    def __init__(self, n_nodes):
+        Network.__init__(self, n_nodes)
+
+        dimension = int(math.sqrt(n_nodes))
+
+        pos = 0
+        for i in range(dimension):
+            for j in range(dimension):
+                #connect to left
+                if j != 0:
+                    left = pos-1
+                elif j == 0: #connect to the other edge
+                    left = pos + dimension - 1
+                self.nodes[pos].add_connection(left)
+
+                #connect to right
+                if j != dimension-1:
+                    right = pos+1
+                elif j == dimension-1:
+                    right = pos - dimension + 1
+                self.nodes[pos].add_connection(right)
+
+                #connect up
+                if i != 0:
+                    up = pos-dimension
+                elif i == 0: #connect to the other edge
+                    up = pos + (dimension)*(dimension-1)
+                self.nodes[pos].add_connection(up)
+
+                #connect down
+                if i != dimension-1:
+                    down = pos+dimension
+                elif i == dimension-1:
+                    down = pos - (dimension)*(dimension-1)
+                self.nodes[pos].add_connection(down)
+
+                pos += 1
+
 #class RandomNetwork(Network):
 #class ScaleFreeNetwork(Network):
 
