@@ -7,97 +7,155 @@ import datetime
 import threading
 import pickle
 from network import *
+from multiprocessing import Pool
 
 #evolution constrains
-_TESTS_PER_INDIVIDUAL = 100      #amount of tests by individual
-_LOG_FILE = "logs/rule.txt"
+_TESTS_PER_INDIVIDUAL = 20      #amount of tests by individual
+_RESULT_FILE = "rules/result.dat"
 
 #network constrains
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
-_ITERATIONS = 100                  #how many iterations each individual will try to survive
+_ITERATIONS = 100                 #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
 _UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
 _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in danger level
 _MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system during execution
+_NOISE_DURING = False             #apply (or not) noise during execution
+
+_N_NODES = 1000                   #total number of nodes in the network
+_N_CONNECTIONS = 4                #number of connections per node
+_P = 0.04                         #chance of rewiring
 
 
 random.seed()
 
-def main(argv):
-    if len(argv) != 3:
-        print("usage: rules_evolution [n_nodes] [pickle_file]")
-        return
-
-    ##create network
-    #the network will be chosen from the result of the network evolution
-    n_nodes = int(argv[1]) #number of nodes in the network
-    matrix_size = int(((n_nodes - 1)*n_nodes)/2) #this is the size of the triangular region lower to the main diagonal of the matrix.
-    pickle_file = open(argv[2], "rb")
+def get_genome_from_file(filename):
+    pickle_file = open(filename, "rb")
     genome_population = pickle.load(pickle_file)
-    pop_size = len(genome_population)
     genome = genome_population[-1][0] #get the last genome, to test. if the list is initialized, it will contain the best individual
+
+def create_my_network(args):
+    #create network from file resulting of the evolution
+    n_nodes = args[0]
+    genome = args[1]
 
     #generate network from genome 
     network = Network(n_nodes)
     network.initialize_from_genome(genome)
+    return network
+
+def create_small_world(args):
+    return SmallWorldNetwork(args[0], args[1], args[2]) #n_nodes, n_connections, p
+
+def create_local(args):
+    return LocalNetwork(args[0], args[1]) #n_nodes, n_connections
+
+def create_global(args):
+    return GlobalNetwork(args[0]) #n_nodes
+
+#def create_random():
+#def create_scale_free():
+#def create_von_neumann():
+
+def run_test(candidates, create_net_func, func_args, init_noise=[]):
+    ##run execution in paralel
+    #pool = Pool(4)
+    map_args = [[candidates[i], create_net_func, func_args, init_noise] for i in range(_NODE_VALUES_RANGE**2)]
+    #candidates = pool.map(iteration, map_args)
+
+    #linear (old):
+    candidates = []
+    for i in range(_NODE_VALUES_RANGE**2):
+        candidates.append(iteration(map_args[i]))
+
+    #sort candidates by fitness
+    candidates.sort(key = lambda x: x[2]) #Sort the sample by fitness
+    return candidates
 
 
-    ##create the candidates
+def iteration(args):
+    candidate = args[0]
+    create_net_func = args[1]
+    func_args = args[2]
+    init_noise = args[3]
+
+    partial_fitness = 0
+
+    print("it")
+    for j in range(_TESTS_PER_INDIVIDUAL):
+        network = create_net_func(func_args)
+        #initialize network with values
+        if not _NOISE_DURING:
+            NoiseControl.apply_random_noise(network, init_noise[j])
+        else:
+            NoiseControl.apply_regular_noise(network, (_LOWER_ENERGY_LIMIT_DANGER+_UPPER_ENERGY_LIMIT_DANGER)/2)
+
+        old_values_list = network.get_values()
+        similar_runs = 0
+        #run for certain time
+        for k in range(_ITERATIONS):
+            #[input energy]
+            if(_NOISE_DURING):
+                NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True) #TODO: dont randomize every time
+            #run network
+            network.run(candidate[0], candidate[1]) #test candidates rule
+            #update network
+            network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
+            new_values_list = network.get_values()
+            if new_values_list == old_values_list: #check if there was really an update. if not, you don't need more iterations
+                similar_runs += 1
+            else:
+                similar_runs = 0
+            if similar_runs == 3:
+                break
+            old_values_list = new_values_list #update list os values for next iteration
+
+        #evaluate fitness of the individual
+        partial_fitness += network.count_survivors()
+    #network.print_network(True)
+    fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
+    print(fitness)
+    candidate[2] = fitness #store the fitness in candidate
+    return candidate
+
+def main(argv):
+    if len(argv) == 3:
+        #usage: rules_evolution [n_nodes] [pickle_file]
+        genome = get_genome_from_file(argv[1], argv[2])
+
+
+    ########create the candidates
     #each candidate is a pair of LOWER_LIMIT, HIGHER_LIMIT numbers plus a fitness value (initially 0)
-    #as the number of possible combinations is not that high (_NODE_VALUES_RANGE**2), we can test all of them.
     candidates = []
     values_range = _NODE_VALUES_RANGE
     for i in range(values_range):
         for j in range(values_range):
             candidates.append([i,j,0])
-    ##run execution
-    #generate random noise to be inputed in all networks tested
-    noise = []
-    for i in range(_TESTS_PER_INDIVIDUAL):
-        noise.append(NoiseControl.random_noise_generator(n_nodes, _NODE_VALUES_RANGE))
 
-    for i in range(values_range*values_range):
-        partial_fitness = 0
-        print(i)
+    ########create noise
+    if not _NOISE_DURING:
+        #generate random noise to be inputed in all networks tested
+        noise = []
+        for i in range(_TESTS_PER_INDIVIDUAL):
+            noise.append(NoiseControl.random_noise_generator(_N_NODES, _NODE_VALUES_RANGE))
+    else:
+        noise = []
 
-        for j in range(_TESTS_PER_INDIVIDUAL):
-            network = Network(n_nodes)
-            network.initialize_from_genome(genome) #FIXME: dont need to create everytime
-            #initialize network with values
-            NoiseControl.apply_random_noise(network, noise[j])
+    ########run tests
+    test_params = [
+    [candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
+    [candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world noise
+    [candidates.copy(), create_global, [_N_NODES], noise] #global args
+    ]
 
-            #run for certain time
-            for k in range(_ITERATIONS):
-                #[input energy]
-                NoiseControl.apply_random_noise(network, noise_range=_MAX_ENERGY_INPUT, negative_range=True)
-                #run network
-                network.run(candidates[i][0], candidates[i][1]) #test candidates rule
-                #update network
-                network.update_network(_LOWER_ENERGY_LIMIT_DANGER, _UPPER_ENERGY_LIMIT_DANGER, _GENERATIONS_IN_DANGER_LIMIT)
-
-            #evaluate fitness of the individual
-            partial_fitness += network.count_survivors()
-        #network.print_network(True)
-        fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
-        print(fitness)
-        candidates[i][2] = fitness #store the fitness in candidate
-
-    #sort candidates by fitness
-    candidates.sort(key = lambda x: x[2]) #Sort the sample by fitness
-
-
+    results = []
+    for i in range(len(test_params)):
+        results.append(run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3]))
 
     #copy candidates population to a file
-    result_file = open("rules_result_noise.dat", "wb")
-    pickle.dump(candidates, result_file)
+    result_file = open(_RESULT_FILE, "wb")
+    pickle.dump(results, result_file)
     result_file.close()
-
-    print("100 best rules:")
-    print("format: (lower, high, fitness)")
-    for i in range(100, 1, -1):
-        print(candidates[-i][0], candidates[i][1], candidates[i][2])
-
-    #TODO: enhance print_results
 
 
 

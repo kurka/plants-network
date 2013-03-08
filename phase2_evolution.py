@@ -53,7 +53,6 @@ def run_individual(args):
 
         #initialize network with the avg value
         NoiseControl.apply_regular_noise(network, (_LOWER_ENERGY_LIMIT_DANGER+_UPPER_ENERGY_LIMIT_DANGER)/2)
-    
 
         old_values_list = network.get_values()
         similar_runs = 0

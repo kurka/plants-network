@@ -33,11 +33,21 @@ class Node:
         self.endanger = 0               #number of generations that the node is under or above the safe limits of energy
         self.is_alive = True            #if the node is alive or not
 
+    def add_connection(self, node_id):
+        if node_id not in self.connections:
+            self.connections.append(node_id)
+
+    def remove_connection(self, node_id):
+        if node_id in self.connections:
+            self.connections.remove(node_id)
+
     def connect_to_neighbours(self, i, n_nodes, n_connections):
         for j in range(n_connections + 1):
             target = int((j + i - n_connections/2) % n_nodes) #Regular connection with neighbours 
             if target != i: #avoid self connections
                 self.connections.append(target) #Add connection to node
+
+
 
 class Network:
     def __init__(self, n_nodes):
@@ -174,20 +184,28 @@ class Network:
 
 
 
+class LocalNetwork(Network):
+    """Circular Network, where each node is connected to n_connections neighbours
+        Parameters: n_nodes, n_connections (number of connections per node)"""
+    def __init__(self, n_nodes, n_connections):
+        Network.__init__(self, n_nodes)
+
+        #Create "n_nodes" nodes, each with "n_connections" connections to other nodes.
+        for i in range(self.n_nodes):
+            self.nodes[i].connect_to_neighbours(i, n_nodes, n_connections)
+
+
 
 class SmallWorldNetwork(Network):
+    """Creates a Small World network
+        Parameters: n_nodes, n_connections (number of connections per node), p (probability of rewiring)"""
     def __init__(self, n_nodes, n_connections, p):
-        #Initialize a small-world network.
-        self.n_nodes = n_nodes
-        self.nodes = []
+        Network.__init__(self, n_nodes) #create the nodes
 
         #Create "n_nodes" nodes, each with "n_connections" connections to other nodes and a probability "p" of rewiring
         for i in range(self.n_nodes):
-            new_node = Node() #create the node
-            new_node.connect_to_neighbours(i, n_nodes, n_connections) #connect it to its neighbours (before the randomization)
-            self.nodes.append(new_node)
-        #After creating the nodes, randomly rewire some of their connections, with proability "p"
-        for i in range(n_nodes):
+            self.nodes[i].connect_to_neighbours(i, n_nodes, n_connections) #connect it to its neighbours (before the randomization)
+        for i in range(self.n_nodes):#rewire
             self.reorder_edges(i, p)
 
     def reorder_edges(self, node_id, p):
@@ -199,12 +217,26 @@ class SmallWorldNetwork(Network):
                 while (target == node_id) or (target in self.nodes[node_id].connections): #Can't connect to itself or to an already connected node
                     target = random.randint(0, self.n_nodes - 1)
                 old_target = node.connections[j]
-                self.nodes[old_target].connections.remove(node_id) #remove connection from old target
+                self.nodes[old_target].remove_connection(node_id) #remove connection from old target
                 node.connections[j] = target #replace old connection to new target
-                self.nodes[target].connections.append(node_id) #add new connection on target node (two-way connection)
+                self.nodes[target].add_connection(node_id)#add new connection on target node (two-way connection)
 
-#class Global_Network(Network):
-#class LocalNetwork(Network):
+class GlobalNetwork(Network):
+    """In a Global Network, every node is connected to every node
+        Parameters: n_nodes"""
+    def __init__(self, n_nodes):
+        Network.__init__(self, n_nodes) #create the nodes
+
+        #make the connections
+        for i in range(self.n_nodes):
+            for j in range(self.n_nodes):
+                if i != j: #don't make self-connections
+                    self.connect_nodes(i, j)
+
+    def connect_nodes(self, i, j):
+        self.nodes[i].add_connection(j)
+        self.nodes[j].add_connection(i)
+
 #class VonNeumannNetwork(Network):
 #class RandomNetwork(Network):
 #class ScaleFreeNetwork(Network):
