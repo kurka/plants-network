@@ -10,7 +10,7 @@ from network import *
 from multiprocessing import Pool
 
 #evolution constrains
-_TESTS_PER_INDIVIDUAL = 20      #amount of tests by individual
+_TESTS_PER_INDIVIDUAL = 50      #amount of tests by individual
 _RESULT_FILE = "rules/result.dat"
 
 #network constrains
@@ -62,14 +62,14 @@ def create_von_neuman(args):
 
 def run_test(candidates, create_net_func, func_args, init_noise=[]):
     ##run execution in paralel
-    #pool = Pool(4)
+    pool = Pool()
     map_args = [[candidates[i], create_net_func, func_args, init_noise] for i in range(_NODE_VALUES_RANGE**2)]
-    #candidates = pool.map(iteration, map_args)
+    candidates = pool.map(iteration, map_args)
 
     #linear (old):
-    candidates = []
-    for i in range(_NODE_VALUES_RANGE**2):
-        candidates.append(iteration(map_args[i]))
+    #candidates = []
+    #for i in range(_NODE_VALUES_RANGE**2):
+    #    candidates.append(iteration(map_args[i]))
 
     #sort candidates by fitness
     candidates.sort(key = lambda x: x[2]) #Sort the sample by fitness
@@ -116,7 +116,8 @@ def iteration(args):
         partial_fitness += network.count_survivors()
     #network.print_network(True)
     fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
-    print(fitness)
+    print(candidate[0], candidate[1], fitness)
+	#print(fitness)
     candidate[2] = fitness #store the fitness in candidate
     return candidate
 
@@ -153,6 +154,7 @@ def main(argv):
 
     results = []
     for i in range(len(test_params)):
+        print(">>>>>>>>>> TEST", i)
         results.append(run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3]))
 
     #copy candidates population to a file
