@@ -11,7 +11,7 @@ from multiprocessing import Pool
 
 #evolution constrains
 _TESTS_PER_INDIVIDUAL = 50      #amount of tests by individual
-_RESULT_FILE = "rules/result.dat"
+_RESULT_FILE = "rules/result" #dat"
 
 #network constrains
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
@@ -156,11 +156,10 @@ def main(argv):
     for i in range(len(test_params)):
         print(">>>>>>>>>> TEST", i)
         results.append(run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3]))
-
-    #copy candidates population to a file
-    result_file = open(_RESULT_FILE, "wb")
-    pickle.dump(results, result_file)
-    result_file.close()
+        #copy candidates population to a file
+        result_file = open(_RESULT_FILE+str(i)+".dat", "wb")
+        pickle.dump(results, result_file)
+        result_file.close()
 
 
 
