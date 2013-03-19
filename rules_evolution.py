@@ -64,7 +64,7 @@ def create_random(args):
 
 def run_test(candidates, create_net_func, func_args, init_noise=[]):
     ##run execution in paralel
-    pool = Pool(3)
+    pool = Pool()
     map_args = [[candidates[i], create_net_func, func_args, init_noise] for i in range(_NODE_VALUES_RANGE**2)]
     candidates = pool.map(iteration, map_args)
 
