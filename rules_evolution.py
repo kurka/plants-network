@@ -11,7 +11,7 @@ from multiprocessing import Pool
 
 #evolution constrains
 _TESTS_PER_INDIVIDUAL = 50      #amount of tests by individual
-_RESULT_FILE = "rules/result" #dat"
+_RESULT_FILE = "rules/result_" #dat"
 
 #network constrains
 _NODE_VALUES_RANGE = 100          #range of network's nodes value
