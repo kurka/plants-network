@@ -83,6 +83,11 @@ class Network:
                     self.nodes[j].connections.append(i) #connect in both ways
                 position += 1
 
+    #create an edge between nodes i and j
+    def connect_nodes(self, i, j):
+        self.nodes[i].add_connection(j)
+        self.nodes[j].add_connection(i)
+
 
     def run(self, lower_limit, upper_limit):
     #run the network, allowing energy transfusions
@@ -117,12 +122,14 @@ class Network:
                     if neighbour.status == 2:
                         #if the total energy avaiable is less than what the node needs, the node accepts all the energy being offered
                         if energy_avaiable <= node.transactional_energy:
-                            energy_transmited = neighbour.transactional_energy / neighbour.candidates
+                            energy_offered = neighbour.transactional_energy / neighbour.candidates
+                            energy_transmited = energy_offered
                         #when there is more energy avaiable than needed, the node gets energy from its neighbours proportional to the offered amount
                         else:
                             energy_offered = neighbour.transactional_energy / neighbour.candidates
                             energy_transmited = node.transactional_energy * (energy_offered / energy_avaiable)
                         node.value += energy_transmited #needy node gets energy
+                        energy_avaiable -= energy_offered
                         node.transactional_energy -= energy_transmited
                         node.candidates -= 1.0
                         neighbour.value -= energy_transmited #rich node looses energy
@@ -130,7 +137,6 @@ class Network:
                         neighbour.candidates -= 1.0
 
 
-        #self.print_network()
 
     def update_network(self, lower_limit, upper_limit, endanger_limit):
         #check which nodes are under or above the safe energy levels
@@ -221,6 +227,23 @@ class SmallWorldNetwork(Network):
                 node.connections[j] = target #replace old connection to new target
                 self.nodes[target].add_connection(node_id)#add new connection on target node (two-way connection)
 
+class RandomNetwork(Network):
+    """Network with random connected nodes
+        Parameters: n_nodes, n_edges"""
+    def __init__(self, n_nodes, n_edges):
+        Network.__init__(self, n_nodes)
+
+        #create n_edges random connections
+        for i in range(n_edges):
+            origin = random.randint(0, self.n_nodes-1)
+            destination = random.randint(0, self.n_nodes-1)
+            while (destination in self.nodes[origin].connections) or (origin == destination): #check if connection already exist
+                origin = random.randint(0, self.n_nodes-1)
+                destination = random.randint(0, self.n_nodes-1)
+            self.nodes[origin].add_connection(destination)
+            self.nodes[destination].add_connection(origin)
+
+
 class GlobalNetwork(Network):
     """In a Global Network, every node is connected to every node
         Parameters: n_nodes"""
@@ -233,53 +256,104 @@ class GlobalNetwork(Network):
                 if i != j: #don't make self-connections
                     self.connect_nodes(i, j)
 
-    def connect_nodes(self, i, j):
-        self.nodes[i].add_connection(j)
-        self.nodes[j].add_connection(i)
+    def run(self, lower_limit, upper_limit):
+    #run the network, allowing energy transfusions
+
+        full_nodes = []
+        empty_nodes = []
+        #First Round: each node decides to: 1-ask energy from neighbours 2-offer energy to neighbours 0-stay as it is
+        for node in self.nodes: #first evaluate which nodes need energy, or will keep their levels
+            #TODO: swap order
+            if node.value < lower_limit: #if energy is too low
+                empty_nodes.append(node)
+                node.status = 1 #set status to "asking for energy"
+                node.transactional_energy = lower_limit - node.value #the ammount of energy to be received
+            elif node.value > upper_limit: #if energy is too high
+                full_nodes.append(node)
+                node.status = 2 #set status to "offering energy"
+                node.transactional_energy = node.value - upper_limit #the ammount of energy to be given away
+            else: #if energy is nor low or high
+                node.status = 0 #sets status to stay as it is (ie: do nothing)
+                node.transactional_energy = 0.0
+
+        empty_candidates = len(empty_nodes)
+        full_candidates = len(full_nodes)
+        energy_avaiable = 0.0
+
+        for node in full_nodes:
+            energy_avaiable += node.transactional_energy
+        original_energy_avaiable = energy_avaiable #backup
+
+        #Second Round: performs the energy transactions
+        #a transaction occurs always when a node with status 1 (asking) is connected to one (or more) nodes with status 2 (offering)
+        for node in empty_nodes:
+            energy_per_node = energy_avaiable / empty_candidates
+            if energy_per_node <= node.transactional_energy:
+                energy_transmited = energy_per_node
+            else:
+                energy_transmited = node.transactional_energy
+
+            node.value += energy_transmited #needy node gets energy
+            node.transactional_energy -= energy_transmited
+            empty_candidates -= 1
+            energy_avaiable -= energy_transmited
+
+        if original_energy_avaiable != 0:
+            energy_used = 1 - (energy_avaiable / original_energy_avaiable)
+        else:
+            energy_used = 0
+        for node in full_nodes:
+           node.value -= energy_used * node.transactional_energy #rich node looses energy
+
 
 class VonNeumannNetwork(Network):
     """In a Global Network, nodes are connected in a circular grid
-        Parameters: n_nodes"""
-    def __init__(self, n_nodes):
+        Parameters: n_nodes, grid dimensions"""
+    def __init__(self, n_nodes, grid_lines, grid_columns):
         Network.__init__(self, n_nodes)
 
-        dimension = int(math.sqrt(n_nodes))
-
         pos = 0
-        for i in range(dimension):
-            for j in range(dimension):
+        for i in range(grid_lines):
+            for j in range(grid_columns):
                 #connect to left
                 if j != 0:
                     left = pos-1
                 elif j == 0: #connect to the other edge
-                    left = pos + dimension - 1
+                    left = pos + grid_columns - 1
                 self.nodes[pos].add_connection(left)
 
                 #connect to right
-                if j != dimension-1:
+                if j != grid_columns-1:
                     right = pos+1
-                elif j == dimension-1:
-                    right = pos - dimension + 1
+                elif j == grid_columns-1:
+                    right = pos - grid_columns + 1
                 self.nodes[pos].add_connection(right)
 
                 #connect up
                 if i != 0:
-                    up = pos-dimension
+                    up = pos-grid_lines
                 elif i == 0: #connect to the other edge
-                    up = pos + (dimension)*(dimension-1)
+                    up = pos + (grid_lines)*(grid_columns-1)
                 self.nodes[pos].add_connection(up)
 
                 #connect down
-                if i != dimension-1:
-                    down = pos+dimension
-                elif i == dimension-1:
-                    down = pos - (dimension)*(dimension-1)
+                if i != grid_lines-1:
+                    down = pos+grid_lines
+                elif i == grid_lines-1:
+                    down = pos - (grid_lines)*(grid_columns-1)
                 self.nodes[pos].add_connection(down)
 
                 pos += 1
-
-#class RandomNetwork(Network):
 #class ScaleFreeNetwork(Network):
+    #def __init__(self, n_nodes, m_zero, m): #m < m_zero 
+    #m = 10, m_zero = 2
+
+       
+    #cria grafo com m_zero vertices, totalmente conectados. (m_zero = 10)
+    #a cada iteracao: adicionar novo no, com m novas arestas. conectar as m arestas aos nos ja existentes, com probabilidade = grau(no)
+
+
+
 
 class NoiseControl:
     """Implementations of different input paterns to nodes in a network"""

@@ -24,6 +24,7 @@ _NOISE_DURING = False             #apply (or not) noise during execution
 
 _N_NODES = 1000                   #total number of nodes in the network
 _N_CONNECTIONS = 4                #number of connections per node
+_N_EDGES = 2*_N_NODES             #total number of edges
 _P = 0.04                         #chance of rewiring
 
 
@@ -54,15 +55,16 @@ def create_global(args):
     return GlobalNetwork(args[0]) #n_nodes
 
 def create_von_neuman(args):
-    return VonNeumannNetwork(args[0]) #n_nodes - must be perfect square
+    return VonNeumannNetwork(args[0], args[1], args[2]) #n_nodes, grid_lines, grid_columns
 
+def create_random(args):
+    return RandomNetwork(args[0], args[1]) #n_nodes, n_edges
 
-#def create_random():
 #def create_scale_free():
 
 def run_test(candidates, create_net_func, func_args, init_noise=[]):
     ##run execution in paralel
-    pool = Pool()
+    pool = Pool(3)
     map_args = [[candidates[i], create_net_func, func_args, init_noise] for i in range(_NODE_VALUES_RANGE**2)]
     candidates = pool.map(iteration, map_args)
 
@@ -117,7 +119,7 @@ def iteration(args):
     #network.print_network(True)
     fitness = partial_fitness / float(_TESTS_PER_INDIVIDUAL)
     print(candidate[0], candidate[1], fitness)
-	#print(fitness)
+    #print(fitness)
     candidate[2] = fitness #store the fitness in candidate
     return candidate
 
@@ -148,8 +150,9 @@ def main(argv):
     test_params = [
         [candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
         [candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
-        [candidates.copy(), create_global, [_N_NODES], noise], #global args
-        [candidates.copy(), create_von_neuman, [100], noise] #von neuman args
+        [candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
+        [candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
+        [candidates.copy(), create_global, [_N_NODES], noise] #global args
     ]
 
     results = []
@@ -157,7 +160,7 @@ def main(argv):
         print(">>>>>>>>>> TEST", i)
         results.append(run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3]))
         #copy candidates population to a file
-        result_file = open(_RESULT_FILE+str(i)+".dat", "wb")
+        result_file = open(_RESULT_FILE+test_params[i][1].__name__+".dat", "wb")
         pickle.dump(results, result_file)
         result_file.close()
 
