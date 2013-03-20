@@ -330,20 +330,18 @@ class VonNeumannNetwork(Network):
                 self.nodes[pos].add_connection(right)
 
                 #connect up
-                if i != 0:
-                    up = pos-grid_lines
-                elif i == 0: #connect to the other edge
-                    up = pos + (grid_lines)*(grid_columns-1)
+                up = (pos - grid_columns) % (grid_lines*grid_columns)
                 self.nodes[pos].add_connection(up)
 
                 #connect down
-                if i != grid_lines-1:
-                    down = pos+grid_lines
-                elif i == grid_lines-1:
-                    down = pos - (grid_lines)*(grid_columns-1)
+                down = (pos+grid_columns) % (grid_lines*grid_columns)
                 self.nodes[pos].add_connection(down)
 
                 pos += 1
+
+
+       
+                
 #class ScaleFreeNetwork(Network):
     #def __init__(self, n_nodes, m_zero, m): #m < m_zero 
     #m = 10, m_zero = 2

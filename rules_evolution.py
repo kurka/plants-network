@@ -148,8 +148,8 @@ def main(argv):
 
     ########run tests
     test_params = [
-        [candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
-        [candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
+        #[candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
+        #[candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
         [candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
         [candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
         [candidates.copy(), create_global, [_N_NODES], noise] #global args
