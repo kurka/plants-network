@@ -340,13 +340,23 @@ class VonNeumannNetwork(Network):
                 pos += 1
 
 
-       
-                
-#class ScaleFreeNetwork(Network):
-    #def __init__(self, n_nodes, m_zero, m): #m < m_zero 
+class ScaleFreeNetwork(Network):
+    def __init__(self, n_nodes, m_zero, m): #m < m_zero 
     #m = 10, m_zero = 2
+    def __init__(self, n_nodes):
+        #create m_zero nodes, full connected
+        Network.__init__(self, m_zero)
 
-       
+        for i in range(m_zero):
+            for j in range(m_zero):
+                if i != j: #don't make self-connections
+                    self.connect_nodes(i, j)
+
+        for i in range(n_nodes-m_zero):
+            new_node = Node()
+            self.nodes.append(new_node)
+
+
     #cria grafo com m_zero vertices, totalmente conectados. (m_zero = 10)
     #a cada iteracao: adicionar novo no, com m novas arestas. conectar as m arestas aos nos ja existentes, com probabilidade = grau(no)
 
