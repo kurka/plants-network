@@ -12,9 +12,6 @@ from multiprocessing import Pool
 #evolution constrains
 _TESTS_PER_INDIVIDUAL = 50      #amount of tests by individual
 _RESULT_FILE = "rules/result_" #dat"
-
-#network constrains
-_NODE_VALUES_RANGE = 100          #range of network's nodes value
 _ITERATIONS = 100                 #how many iterations each individual will try to survive
 _LOWER_ENERGY_LIMIT_DANGER = 40   #absolute lower limit. If the node stay bellow this level for G generations, it dies
 _UPPER_ENERGY_LIMIT_DANGER = 60   #absolute upper limit. If the node stay above this level for G generations, it dies
@@ -22,11 +19,19 @@ _GENERATIONS_IN_DANGER_LIMIT = 3  #maximum # of generations the node can stay in
 _MAX_ENERGY_INPUT = 10            #maximum amount of energy inputed to the system during execution
 _NOISE_DURING = False             #apply (or not) noise during execution
 
+#network constrains
+_NODE_VALUES_RANGE = 100          #range of network's nodes value
 _N_NODES = 1000                   #total number of nodes in the network
 _N_CONNECTIONS = 4                #number of connections per node
 _N_EDGES = 2*_N_NODES             #total number of edges
+#small-world specs
 _P = 0.04                         #chance of rewiring
-
+#scale-free specs
+_M_ZERO = 10                      #initial nodes in the scale-free network
+_M = 2                            #number of added connections per iteration in the scale-free network
+#von-neumann specs
+_LIN_SIZE = 40                    #dimensions of von-neumann grid 
+_COL_SIZE = 25                    #WARNING: _LIN_SIZE * _COL_SIZE must be equal _N_NODES
 
 random.seed()
 
@@ -60,7 +65,8 @@ def create_von_neuman(args):
 def create_random(args):
     return RandomNetwork(args[0], args[1]) #n_nodes, n_edges
 
-#def create_scale_free():
+def create_scale_free(args):
+    return ScaleFreeNetwork(args[0], args[1], args[2]) #n_nodes, m_zero, m (m < m_zero)
 
 def run_test(candidates, create_net_func, func_args, init_noise=[]):
     ##run execution in paralel
@@ -150,15 +156,16 @@ def main(argv):
     test_params = [
         #[candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
         #[candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
-        [candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
-        [candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
-        [candidates.copy(), create_global, [_N_NODES], noise] #global args
+        #[candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
+        #[candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
+        #[candidates.copy(), create_global, [_N_NODES], noise], #global args
+        [candidates.copy(), create_scale_free, [_N_NODES, _M_ZERO, _M], noise] #scale free
     ]
 
     results = []
     for i in range(len(test_params)):
         print(">>>>>>>>>> TEST", i)
-        results.append(run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3]))
+        results = run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3])
         #copy candidates population to a file
         result_file = open(_RESULT_FILE+test_params[i][1].__name__+".dat", "wb")
         pickle.dump(results, result_file)

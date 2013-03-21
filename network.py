@@ -342,24 +342,37 @@ class VonNeumannNetwork(Network):
 
 class ScaleFreeNetwork(Network):
     def __init__(self, n_nodes, m_zero, m): #m < m_zero 
-    #m = 10, m_zero = 2
-    def __init__(self, n_nodes):
         #create m_zero nodes, full connected
         Network.__init__(self, m_zero)
+        roulette = [] #from where connections will be sorted
 
         for i in range(m_zero):
             for j in range(m_zero):
                 if i != j: #don't make self-connections
                     self.connect_nodes(i, j)
+                    roulette.append(i)
 
         for i in range(n_nodes-m_zero):
             new_node = Node()
+            new_node_id = m_zero + i
             self.nodes.append(new_node)
 
+            #draw the nodes the new node will be connected, from the roulette
+            roulette_selection = []
+            for j in range(m):
+                result = random.sample(roulette, 1)
+                while(result not in roulette_selection): #don't get repeated connections
+                    result = random.sample(roulette, 1)
+                roulette_selection.append(result)
 
-    #cria grafo com m_zero vertices, totalmente conectados. (m_zero = 10)
-    #a cada iteracao: adicionar novo no, com m novas arestas. conectar as m arestas aos nos ja existentes, com probabilidade = grau(no)
+            #add the connections and add the new connections to the roulette (need to be after, to dont compromize the drawn)
+            for j in range(m):
+                self.connect_nodes(new_node_id, roulette_selection[j])
+                roulette.append(roulette_selection[j])
+                roulette.append(new_node_id)
 
+
+    print("sf generated!")
 
 
 
