@@ -159,7 +159,8 @@ def main(argv):
         #[candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
         #[candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
         #[candidates.copy(), create_global, [_N_NODES], noise], #global args
-        [candidates.copy(), create_scale_free, [_N_NODES, _M_ZERO, _M], noise] #scale free
+        #[candidates.copy(), create_scale_free, [_N_NODES, _M_ZERO, _M], noise] #scale free
+        [candidates.copy(), create_global, [_N_NODES], noise] #global args
     ]
 
     results = []

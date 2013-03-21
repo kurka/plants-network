@@ -251,10 +251,10 @@ class GlobalNetwork(Network):
         Network.__init__(self, n_nodes) #create the nodes
 
         #make the connections
-        for i in range(self.n_nodes):
-            for j in range(self.n_nodes):
-                if i != j: #don't make self-connections
-                    self.connect_nodes(i, j)
+        #for i in range(self.n_nodes):
+        #    for j in range(self.n_nodes):
+        #        if i != j: #don't make self-connections
+        #            self.connect_nodes(i, j)
 
     def run(self, lower_limit, upper_limit):
     #run the network, allowing energy transfusions
