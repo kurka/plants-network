@@ -150,15 +150,15 @@ def main(argv):
     test_params = [
         #[candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
         #[candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
-        [candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
-        [candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
+        #[candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
+        #[candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
         [candidates.copy(), create_global, [_N_NODES], noise] #global args
     ]
 
     results = []
     for i in range(len(test_params)):
         print(">>>>>>>>>> TEST", i)
-        results.append(run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3]))
+        results = run_test(test_params[i][0], test_params[i][1], test_params[i][2], test_params[i][3])
         #copy candidates population to a file
         result_file = open(_RESULT_FILE+test_params[i][1].__name__+".dat", "wb")
         pickle.dump(results, result_file)
