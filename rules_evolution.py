@@ -72,6 +72,8 @@ def run_test(candidates, create_net_func, func_args, init_noise=[]):
     ##run execution in paralel
     pool = Pool()
     map_args = [[candidates[i], create_net_func, func_args, init_noise] for i in range(_NODE_VALUES_RANGE**2)]
+    
+    #paralel:
     candidates = pool.map(iteration, map_args)
 
     #linear (old):
@@ -159,8 +161,8 @@ def main(argv):
         #[candidates.copy(), create_von_neumann, [_N_NODES, 40, 25], noise], #von neumann args
         #[candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
         #[candidates.copy(), create_global, [_N_NODES], noise], #global args
-        #[candidates.copy(), create_scale_free, [_N_NODES, _M_ZERO, _M], noise] #scale free
-        [candidates.copy(), create_global, [_N_NODES], noise] #global args
+        [candidates.copy(), create_scale_free, [_N_NODES, _M_ZERO, _M], noise] #scale free
+        #[candidates.copy(), create_global, [_N_NODES], noise] #global args
     ]
 
     results = []

@@ -91,6 +91,7 @@ class Network:
 
     def run(self, lower_limit, upper_limit):
     #run the network, allowing energy transfusions
+	
 
         #First Round: each node decides to: 1-ask energy from neighbours 2-offer energy to neighbours 0-stay as it is
         for node in self.nodes: #first evaluate which nodes need energy, or will keep their levels
@@ -343,7 +344,7 @@ class VonNeumannNetwork(Network):
 class ScaleFreeNetwork(Network):
     def __init__(self, n_nodes, m_zero, m): #m < m_zero 
         #create m_zero nodes, full connected
-        Network.__init__(self, m_zero)
+        Network.__init__(self, n_nodes)
         roulette = [] #from where connections will be sorted
 
         for i in range(m_zero):
@@ -353,18 +354,17 @@ class ScaleFreeNetwork(Network):
                     roulette.append(i)
 
         for i in range(n_nodes-m_zero):
-            new_node = Node()
             new_node_id = m_zero + i
-            self.nodes.append(new_node)
-
+            
             #draw the nodes the new node will be connected, from the roulette
             roulette_selection = []
             for j in range(m):
-                result = random.sample(roulette, 1)
-                while(result not in roulette_selection): #don't get repeated connections
-                    result = random.sample(roulette, 1)
+                result = random.sample(roulette, 1)[0]
+                while(result in roulette_selection): #don't get repeated connections
+                    result = random.sample(roulette, 1)[0]
                 roulette_selection.append(result)
 
+            #print(roulette_selection, roulette)
             #add the connections and add the new connections to the roulette (need to be after, to dont compromize the drawn)
             for j in range(m):
                 self.connect_nodes(new_node_id, roulette_selection[j])
@@ -372,7 +372,6 @@ class ScaleFreeNetwork(Network):
                 roulette.append(new_node_id)
 
 
-    print("sf generated!")
 
 
 
