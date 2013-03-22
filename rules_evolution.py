@@ -59,7 +59,7 @@ def create_local(args):
 def create_global(args):
     return GlobalNetwork(args[0]) #n_nodes
 
-def create_von_neuman(args):
+def create_von_neumann(args):
     return VonNeumannNetwork(args[0], args[1], args[2]) #n_nodes, grid_lines, grid_columns
 
 def create_random(args):
@@ -156,7 +156,7 @@ def main(argv):
     test_params = [
         #[candidates.copy(), create_local, [_N_NODES, _N_CONNECTIONS], noise],  #local args
         #[candidates.copy(), create_small_world, [_N_NODES, _N_CONNECTIONS, _P], noise], #small world args
-        #[candidates.copy(), create_von_neuman, [_N_NODES, 40, 25], noise], #von neuman args
+        #[candidates.copy(), create_von_neumann, [_N_NODES, 40, 25], noise], #von neumann args
         #[candidates.copy(), create_random, [_N_NODES, _N_EDGES], noise], #random args
         #[candidates.copy(), create_global, [_N_NODES], noise], #global args
         #[candidates.copy(), create_scale_free, [_N_NODES, _M_ZERO, _M], noise] #scale free
